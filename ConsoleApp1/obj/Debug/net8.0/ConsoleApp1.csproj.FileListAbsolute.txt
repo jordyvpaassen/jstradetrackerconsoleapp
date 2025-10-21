@@ -9,10 +9,10 @@
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.AssemblyInfoInputs.cache
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.AssemblyInfo.cs
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.csproj.CoreCompileInputs.cache
+/Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.sourcelink.json
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleA.CB28C8CC.Up2Date
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.dll
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/refint/ConsoleApp1.dll
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.pdb
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.genruntimeconfig.cache
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ref/ConsoleApp1.dll
-/Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.sourcelink.json

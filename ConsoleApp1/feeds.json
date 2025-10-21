@@ -56,11 +56,43 @@
       "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1687778&categoryType=2&additionalType=2",
       "category": "muziek",
       "active": true
+    },
+    {
+      "id": "PneusOnlineSuisse",
+      "name": "PneusOnlineSuisse",
+      "description": "PneusOnlineSuisse - Banden en accessoires voor auto's",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=410262&limit=3000&categoryType=2&additionalType=2",
+      "category": "auto banden",
+      "active": true
+    },
+    {
+      "id": "TUI",
+      "name": "TUI",
+      "description": "TUI - Vakanties, reizen en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1063042&categoryType=2&additionalType=2",
+      "category": "Vakanties",
+      "active": true
+    },
+    {
+        "id": "smartphoto",
+        "name": "Smartphoto",
+        "description": "Smartphoto - Fotoproducten en gepersonaliseerde cadeaus",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1195836&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
+    },
+    {
+        "id": "HEMA",
+        "name": "HEMA",
+        "description": "HEMA - Voor alledaagse producten en meer",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1096437&limit=3000&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
     }
     
   ],
   "config": {
-    "defaultFeed": "Audioshop",
+    "defaultFeed": "HEMA",
     "outputFormats": ["json", "markdown"],
     "generateImages": true,
     "seoOptimized": true

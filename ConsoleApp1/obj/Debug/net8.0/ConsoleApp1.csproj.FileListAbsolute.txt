@@ -15,3 +15,4 @@
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.pdb
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.genruntimeconfig.cache
 /Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ref/ConsoleApp1.dll
+/Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/obj/Debug/net8.0/ConsoleApp1.sourcelink.json

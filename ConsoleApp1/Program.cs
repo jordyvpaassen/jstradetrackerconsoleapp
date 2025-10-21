@@ -20,25 +20,118 @@ namespace TradeTrackerConsoleApp
         public DateTime ImportDate { get; set; }
     }
 
+    public class FeedConfig
+    {
+        public List<TradeTrackerFeed>? Feeds { get; set; }
+        public Config? Config { get; set; }
+    }
+
+    public class TradeTrackerFeed
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public string? Url { get; set; }
+        public string? Category { get; set; }
+        public bool Active { get; set; }
+    }
+
+    public class Config
+    {
+        public string? DefaultFeed { get; set; }
+        public List<string>? OutputFormats { get; set; }
+        public bool GenerateImages { get; set; }
+        public bool SeoOptimized { get; set; }
+    }
+
     public class TradeTrackerService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiUrl = "https://pf.tradetracker.net/?aid=439092&encoding=utf-8&type=json&fid=2451096&r=xtrmbbq123jaloezie&categoryType=2&additionalType=2";
+        private FeedConfig? _feedConfig;
+        private TradeTrackerFeed? _currentFeed;
 
         public TradeTrackerService()
         {
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("User-Agent", 
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            LoadFeedConfig();
+        }
+
+        private void LoadFeedConfig()
+        {
+            try
+            {
+                var configPath = "feeds.json";
+                if (File.Exists(configPath))
+                {
+                    var jsonContent = File.ReadAllText(configPath);
+                    _feedConfig = JsonConvert.DeserializeObject<FeedConfig>(jsonContent);
+                    
+                    if (_feedConfig?.Feeds != null && _feedConfig.Feeds.Any())
+                    {
+                        // Use default feed or first active feed
+                        _currentFeed = _feedConfig.Feeds.FirstOrDefault(f => 
+                            f.Id == _feedConfig.Config?.DefaultFeed && f.Active) 
+                            ?? _feedConfig.Feeds.FirstOrDefault(f => f.Active);
+                        
+                        Console.WriteLine($"Geladen feed configuratie: {_feedConfig.Feeds.Count} feeds beschikbaar");
+                        Console.WriteLine($"Actieve feed: {_currentFeed?.Name ?? "Geen"}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Geen feeds.json gevonden, gebruik standaard URL");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fout bij laden feed configuratie: {ex.Message}");
+            }
+        }
+
+        public void ListAvailableFeeds()
+        {
+            if (_feedConfig?.Feeds != null && _feedConfig.Feeds.Any())
+            {
+                Console.WriteLine("\n=== BESCHIKBARE FEEDS ===");
+                foreach (var feed in _feedConfig.Feeds.Where(f => f.Active))
+                {
+                    var current = feed.Id == _currentFeed?.Id ? " (ACTIEF)" : "";
+                    Console.WriteLine($"- {feed.Id}: {feed.Name}{current}");
+                    Console.WriteLine($"  {feed.Description}");
+                    Console.WriteLine($"  Categorie: {feed.Category}");
+                    Console.WriteLine();
+                }
+            }
+        }
+
+        public bool SelectFeed(string feedId)
+        {
+            if (_feedConfig?.Feeds == null) return false;
+            
+            var feed = _feedConfig.Feeds.FirstOrDefault(f => f.Id == feedId && f.Active);
+            if (feed != null)
+            {
+                _currentFeed = feed;
+                Console.WriteLine($"Feed gewisseld naar: {feed.Name}");
+                return true;
+            }
+            
+            Console.WriteLine($"Feed '{feedId}' niet gevonden of niet actief");
+            return false;
         }
 
         public async Task<List<TradeTrackerProduct>> GetProductsAsync()
         {
             try
             {
-                Console.WriteLine($"Ophalen van data van: {_apiUrl}");
+                var apiUrl = _currentFeed?.Url ?? "https://pf.tradetracker.net/?aid=439092&encoding=utf-8&type=json&fid=2451096&r=xtrmbbq123jaloezie&categoryType=2&additionalType=2";
                 
-                var response = await _httpClient.GetStringAsync(_apiUrl);
+                Console.WriteLine($"Ophalen van data van: {_currentFeed?.Name ?? "Standaard feed"}");
+                Console.WriteLine($"Feed categorie: {_currentFeed?.Category ?? "Onbekend"}");
+                
+                var response = await _httpClient.GetStringAsync(apiUrl);
                 Console.WriteLine($"Data ontvangen, grootte: {response.Length} characters");
 
                 var products = ParseJsonData(response);
@@ -359,7 +452,10 @@ namespace TradeTrackerConsoleApp
         {
             try
             {
-                var fileName = $"tradetracker_products_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                var dateTime = DateTime.Now;
+                var datePrefix = dateTime.ToString("yyyy-MM-dd");
+                var timeStamp = dateTime.ToString("HHmmss");
+                var fileName = $"{datePrefix}-tradetracker-products-{timeStamp}.json";
                 var json = JsonConvert.SerializeObject(products, Formatting.Indented);
                 await File.WriteAllTextAsync(fileName, json);
                 Console.WriteLine($"Producten opgeslagen in JSON bestand: {fileName}");
@@ -374,10 +470,18 @@ namespace TradeTrackerConsoleApp
         {
             try
             {
-                var fileName = $"tradetracker_report_{DateTime.Now:yyyyMMdd_HHmmss}.md";
-                var markdown = GenerateMarkdownReport(products);
+                var dateTime = DateTime.Now;
+                var datePrefix = dateTime.ToString("yyyy-MM-dd");
+                var timeStamp = dateTime.ToString("HHmmss");
+                var fileName = $"{datePrefix}-tradetracker-report-{timeStamp}.markdown";
+                var imageName = $"{datePrefix}-tradetracker-{timeStamp}.svg";
+                
+                var markdown = GenerateMarkdownReport(products, imageName);
                 await File.WriteAllTextAsync(fileName, markdown);
                 Console.WriteLine($"Rapport opgeslagen in Markdown bestand: {fileName}");
+                
+                // Genereer en sla afbeelding op
+                await GenerateBlogImageAsync(products, imageName);
             }
             catch (Exception ex)
             {
@@ -385,21 +489,160 @@ namespace TradeTrackerConsoleApp
             }
         }
 
-        private string GenerateMarkdownReport(List<TradeTrackerProduct> products)
+        public async Task GenerateBlogImageAsync(List<TradeTrackerProduct> products, string imageName)
+        {
+            try
+            {
+                // Maak img directory aan als deze niet bestaat
+                var imagesDir = "img";
+                if (!Directory.Exists(imagesDir))
+                {
+                    Directory.CreateDirectory(imagesDir);
+                }
+
+                var primaryBrand = products.Where(p => !string.IsNullOrEmpty(p.Brand))
+                                         .GroupBy(p => p.Brand)
+                                         .OrderByDescending(g => g.Count())
+                                         .FirstOrDefault()?.Key ?? "TradeTracker";
+
+                var productsWithPrice = products.Where(p => p.Price > 0).ToList();
+                var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
+
+                // Genereer SVG afbeelding
+                var svgContent = GenerateSvgImage(primaryBrand, products.Count, avgPrice);
+                
+                var imagePath = Path.Combine(imagesDir, imageName);
+                await File.WriteAllTextAsync(imagePath, svgContent);
+                
+                Console.WriteLine($"Blog afbeelding opgeslagen: {imagePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fout bij genereren afbeelding: {ex.Message}");
+            }
+        }
+
+        private string GenerateSvgImage(string brandName, int productCount, decimal avgPrice)
+        {
+            var svg = $@"<svg width=""800"" height=""400"" xmlns=""http://www.w3.org/2000/svg"">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id=""bgGradient"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#667eea;stop-opacity:1"" />
+      <stop offset=""100%"" style=""stop-color:#764ba2;stop-opacity:1"" />
+    </linearGradient>
+    <linearGradient id=""cardGradient"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:rgba(255,255,255,0.9);stop-opacity:1"" />
+      <stop offset=""100%"" style=""stop-color:rgba(255,255,255,0.7);stop-opacity:1"" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width=""800"" height=""400"" fill=""url(#bgGradient)""/>
+  
+  <!-- Main card -->
+  <rect x=""50"" y=""50"" width=""700"" height=""300"" rx=""20"" fill=""url(#cardGradient)"" stroke=""rgba(255,255,255,0.3)"" stroke-width=""2""/>
+  
+  <!-- TradeTracker logo area -->
+  <rect x=""70"" y=""70"" width=""60"" height=""60"" rx=""10"" fill=""#FF6B35""/>
+  <text x=""100"" y=""110"" text-anchor=""middle"" fill=""white"" font-family=""Arial, sans-serif"" font-size=""20"" font-weight=""bold"">TT</text>
+  
+  <!-- Title -->
+  <text x=""150"" y=""95"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""28"" font-weight=""bold"">TradeTracker Analysis</text>
+  <text x=""150"" y=""125"" fill=""#4A5568"" font-family=""Arial, sans-serif"" font-size=""22"">{EscapeSvgText(brandName)}</text>
+  
+  <!-- Statistics -->
+  <g transform=""translate(70, 160)"">
+    <!-- Product count -->
+    <rect x=""0"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
+    <text x=""90"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">PRODUCTEN</text>
+    <text x=""90"" y=""50"" text-anchor=""middle"" fill=""#667eea"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">{productCount:N0}</text>
+    <text x=""90"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">items in feed</text>
+    
+    <!-- Average price -->
+    <rect x=""200"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
+    <text x=""290"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">GEM. PRIJS</text>
+    <text x=""290"" y=""50"" text-anchor=""middle"" fill=""#38A169"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">€{avgPrice:F0}</text>
+    <text x=""290"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">per product</text>
+    
+    <!-- Brand info -->
+    <rect x=""400"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
+    <text x=""490"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">AFFILIATE</text>
+    <text x=""490"" y=""50"" text-anchor=""middle"" fill=""#9F7AEA"" font-family=""Arial, sans-serif"" font-size=""20"" font-weight=""bold"">READY</text>
+    <text x=""490"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">marketing</text>
+  </g>
+  
+  <!-- Date -->
+  <text x=""720"" y=""330"" text-anchor=""end"" fill=""rgba(255,255,255,0.8)"" font-family=""Arial, sans-serif"" font-size=""12"">{DateTime.Now:dd-MM-yyyy}</text>
+  
+  <!-- Decorative elements -->
+  <circle cx=""650"" cy=""120"" r=""30"" fill=""rgba(255,255,255,0.1)""/>
+  <circle cx=""680"" cy=""90"" r=""20"" fill=""rgba(255,255,255,0.05)""/>
+  <circle cx=""720"" cy=""140"" r=""25"" fill=""rgba(255,255,255,0.08)""/>
+</svg>";
+
+            return svg;
+        }
+
+        private string EscapeSvgText(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            
+            return text.Replace("&", "&amp;")
+                      .Replace("<", "&lt;")
+                      .Replace(">", "&gt;")
+                      .Replace("\"", "&quot;")
+                      .Replace("'", "&apos;");
+        }
+
+        private string GenerateMarkdownReport(List<TradeTrackerProduct> products, string imageName)
         {
             var sb = new System.Text.StringBuilder();
             var importDate = products.FirstOrDefault()?.ImportDate ?? DateTime.Now;
+            var primaryBrand = products.Where(p => !string.IsNullOrEmpty(p.Brand))
+                                     .GroupBy(p => p.Brand)
+                                     .OrderByDescending(g => g.Count())
+                                     .FirstOrDefault()?.Key ?? "Unknown";
 
-            // Header
-            sb.AppendLine("# TradeTracker Product Feed Report");
-            sb.AppendLine();
-            sb.AppendLine($"**Import Datum:** {importDate:yyyy-MM-dd HH:mm:ss}  ");
-            sb.AppendLine($"**Totaal Producten:** {products.Count}  ");
-            sb.AppendLine($"**Gegenereerd:** {DateTime.Now:yyyy-MM-dd HH:mm:ss}  ");
-            sb.AppendLine();
-
-            // Statistieken
             var productsWithPrice = products.Where(p => p.Price > 0).ToList();
+            var minPrice = productsWithPrice.Any() ? productsWithPrice.Min(p => p.Price) : 0;
+            var maxPrice = productsWithPrice.Any() ? productsWithPrice.Max(p => p.Price) : 0;
+            var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
+            
+            var cleanBrandName = primaryBrand.Replace(".", "").Replace(" ", "");
+            var categoryKeywords = products.Where(p => !string.IsNullOrEmpty(p.Category))
+                                         .Select(p => p.Category)
+                                         .Distinct()
+                                         .Take(5)
+                                         .ToList();
+
+            // Jekyll front matter with SEO optimization
+            sb.AppendLine("---");
+            sb.AppendLine("layout: post");
+            sb.AppendLine($"title: \"{primaryBrand} TradeTracker Feed Analysis - {products.Count} Products\"");
+            sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
+            sb.AppendLine($"description: \"Complete analysis of {primaryBrand} TradeTracker affiliate feed with {products.Count} products. Price range €{minPrice:F2} - €{maxPrice:F2}. Perfect for affiliate marketers, bloggers and comparison sites.\"");
+            sb.AppendLine($"excerpt: \"TradeTracker feed analysis for {primaryBrand}: {products.Count} products, average price €{avgPrice:F2}. Detailed insights for affiliate marketing success.\"");
+            sb.AppendLine($"img: {imageName}");
+            sb.AppendLine($"tags: [TradeTracker, {cleanBrandName}, affiliate-marketing, product-feed, price-analysis, ecommerce]");
+            sb.AppendLine($"categories: [affiliate-marketing, product-analysis]");
+            sb.AppendLine($"keywords: \"TradeTracker, {primaryBrand}, affiliate marketing, product feed, price comparison, ecommerce analysis\"");
+            sb.AppendLine("author: TradeTracker Analyzer");
+            sb.AppendLine($"canonical_url: \"/tradetracker-{cleanBrandName.ToLower()}-analysis\"");
+            sb.AppendLine("sitemap:");
+            sb.AppendLine("  priority: 0.8");
+            sb.AppendLine("  changefreq: weekly");
+            sb.AppendLine("schema:");
+            sb.AppendLine("  type: Article");
+            sb.AppendLine($"  wordCount: {products.Count * 15 + 800}"); // Estimate based on content
+            sb.AppendLine("---");
+            sb.AppendLine();
+
+            // SEO-optimized intro paragraph
+            sb.AppendLine($"Deze **{primaryBrand} TradeTracker affiliate feed analyse** biedt inzicht in **{products.Count} producten** ");
+            sb.AppendLine($"met een gemiddelde prijs van **€{avgPrice:F2}**. Perfect voor affiliate marketers, product vergelijkingsites ");
+            sb.AppendLine("en e-commerce professionals die op zoek zijn naar winstgevende partnerschappen.");
+            sb.AppendLine();
             var uniqueBrands = products.Where(p => !string.IsNullOrEmpty(p.Brand))
                                      .Select(p => p.Brand)
                                      .Distinct()
@@ -411,32 +654,66 @@ namespace TradeTrackerConsoleApp
                                          .OrderBy(c => c)
                                          .ToList();
 
-            sb.AppendLine("## 📊 Statistieken");
+            sb.AppendLine("## TradeTracker Affiliate Marketing Overzicht");
             sb.AppendLine();
-            sb.AppendLine($"- **Producten met prijs:** {productsWithPrice.Count}");
+            sb.AppendLine($"### Prijsstrategie en Marktpositie");
+            sb.AppendLine();
             if (productsWithPrice.Any())
             {
-                sb.AppendLine($"- **Gemiddelde prijs:** €{productsWithPrice.Average(p => p.Price):F2}");
-                sb.AppendLine($"- **Laagste prijs:** €{productsWithPrice.Min(p => p.Price):F2}");
-                sb.AppendLine($"- **Hoogste prijs:** €{productsWithPrice.Max(p => p.Price):F2}");
+                sb.AppendLine($"De **{primaryBrand} affiliate productfeed** biedt een strategisch prijsbereik van **€{minPrice:F2}** tot **€{maxPrice:F2}**, ");
+                sb.AppendLine($"met een **gemiddelde orderwaarde van €{avgPrice:F2}**. Deze prijsstructuur maakt het mogelijk om ");
+                sb.AppendLine("zowel budget-bewuste als premium klanten te bedienen, wat de conversiekansen voor affiliates verhoogt.");
+                sb.AppendLine();
+                
+                // Add conversion optimization insight
+                if (avgPrice > 50)
+                {
+                    sb.AppendLine("💡 **Affiliate Tip**: Met een gemiddelde orderwaarde boven €50 is deze feed ideaal voor ");
+                    sb.AppendLine("content marketing en productreviews met hogere commissies.");
+                }
+                else
+                {
+                    sb.AppendLine("💡 **Affiliate Tip**: De betaalbare prijzen maken deze producten perfect voor ");
+                    sb.AppendLine("social media marketing en impulse aankopen.");
+                }
+                sb.AppendLine();
             }
-            sb.AppendLine($"- **Unieke merken:** {uniqueBrands.Count}");
-            sb.AppendLine($"- **Unieke categorieën:** {uniqueCategories.Count}");
+            
+            sb.AppendLine("### Merk Consistentie en Kwaliteit");
+            sb.AppendLine();
+            if (uniqueBrands.Count > 1)
+            {
+                sb.AppendLine($"Met **{uniqueBrands.Count} verschillende merken** biedt deze TradeTracker feed ");
+                sb.AppendLine("uitstekende mogelijkheden voor **product vergelijkingen** en niche marketing strategieën.");
+            }
+            else
+            {
+                sb.AppendLine($"Deze **{primaryBrand} exclusieve feed** biedt voordelen voor affiliate marketers:");
+                sb.AppendLine("- Consistente merkbeleving verhoogt vertrouwen");
+                sb.AppendLine("- Eenvoudigere content creatie door focus op één merk");
+                sb.AppendLine("- Betere conversieratio door merkbekendheid");
+            }
             sb.AppendLine();
 
-            // Merken overzicht
-            if (uniqueBrands.Any())
+            // Merken analyse
+            if (uniqueBrands.Any() && uniqueBrands.Count > 1)
             {
-                sb.AppendLine("## 🏷️ Merken Overzicht");
+                sb.AppendLine("## Merk Diversiteit");
                 sb.AppendLine();
-                foreach (var brand in uniqueBrands)
+                sb.AppendLine("De volgende merken zijn vertegenwoordigd in deze productfeed:");
+                sb.AppendLine();
+                foreach (var brand in uniqueBrands.Take(10))
                 {
                     var brandCount = products.Count(p => p.Brand == brand);
-                    var avgPrice = products.Where(p => p.Brand == brand && p.Price > 0)
+                    var brandAvgPrice = products.Where(p => p.Brand == brand && p.Price > 0)
                                          .Select(p => p.Price)
                                          .DefaultIfEmpty(0)
                                          .Average();
-                    sb.AppendLine($"- **{brand}:** {brandCount} producten (Gem. prijs: €{avgPrice:F2})");
+                    sb.AppendLine($"- **{brand}**: {brandCount} producten met een gemiddelde prijs van €{brandAvgPrice:F2}");
+                }
+                if (uniqueBrands.Count > 10)
+                {
+                    sb.AppendLine($"- *... en nog {uniqueBrands.Count - 10} andere merken*");
                 }
                 sb.AppendLine();
             }
@@ -454,80 +731,125 @@ namespace TradeTrackerConsoleApp
                 sb.AppendLine();
             }
 
-            // Top producten per prijs
-            var topExpensive = productsWithPrice.OrderByDescending(p => p.Price).Take(10).ToList();
+            // Premium producten
+            var topExpensive = productsWithPrice.OrderByDescending(p => p.Price).Take(5).ToList();
             if (topExpensive.Any())
             {
-                sb.AppendLine("## 💎 Top 10 Duurste Producten");
+                sb.AppendLine("## Premium Productlijn");
                 sb.AppendLine();
-                sb.AppendLine("| Rang | Product | Prijs | Merk | ID | Link |");
-                sb.AppendLine("|------|---------|-------|------|-----|------|");
+                sb.AppendLine("Voor klanten die op zoek zijn naar de hoogwaardige producten, biedt de feed enkele interessante opties:");
+                sb.AppendLine();
                 
                 for (int i = 0; i < topExpensive.Count; i++)
                 {
                     var product = topExpensive[i];
-                    var productName = product.ProductName?.Length > 45 
-                        ? product.ProductName.Substring(0, 42) + "..." 
-                        : product.ProductName ?? "N/A";
+                    var productName = product.ProductName ?? "Onbekend product";
                     var productLink = !string.IsNullOrEmpty(product.ProductURL) 
-                        ? $"[🔗 Bekijk]({product.ProductURL})" 
-                        : "N/A";
-                    sb.AppendLine($"| {i + 1} | {EscapeMarkdown(productName)} | €{product.Price:F2} | {EscapeMarkdown(product.Brand ?? "N/A")} | {product.ProductID} | {productLink} |");
+                        ? $"[{EscapeMarkdown(productName)}]({product.ProductURL})" 
+                        : EscapeMarkdown(productName);
+                    
+                    sb.AppendLine($"**{i + 1}. {productLink}**  ");
+                    sb.AppendLine($"Prijs: €{product.Price:F2} | Merk: {product.Brand ?? "N/A"} | Product ID: {product.ProductID}");
+                    if (!string.IsNullOrEmpty(product.Description))
+                    {
+                        var shortDesc = product.Description.Length > 100 
+                            ? product.Description.Substring(0, 97) + "..." 
+                            : product.Description;
+                        sb.AppendLine($"*{EscapeMarkdown(shortDesc)}*");
+                    }
+                    sb.AppendLine();
                 }
-                sb.AppendLine();
             }
 
-            // Goedkoopste producten
-            var topCheap = productsWithPrice.Where(p => p.Price > 0).OrderBy(p => p.Price).Take(10).ToList();
+            // Budget vriendelijke opties
+            var topCheap = productsWithPrice.Where(p => p.Price > 0).OrderBy(p => p.Price).Take(5).ToList();
             if (topCheap.Any())
             {
-                sb.AppendLine("## 💰 Top 10 Goedkoopste Producten");
+                sb.AppendLine("## Budget-Vriendelijke Opties");
                 sb.AppendLine();
-                sb.AppendLine("| Rang | Product | Prijs | Merk | ID | Link |");
-                sb.AppendLine("|------|---------|-------|------|-----|------|");
+                sb.AppendLine("Voor kosteneffectieve keuzes biedt de feed deze betaalbare alternatieven:");
+                sb.AppendLine();
                 
                 for (int i = 0; i < topCheap.Count; i++)
                 {
                     var product = topCheap[i];
-                    var productName = product.ProductName?.Length > 45 
-                        ? product.ProductName.Substring(0, 42) + "..." 
-                        : product.ProductName ?? "N/A";
+                    var productName = product.ProductName ?? "Onbekend product";
                     var productLink = !string.IsNullOrEmpty(product.ProductURL) 
-                        ? $"[🔗 Bekijk]({product.ProductURL})" 
-                        : "N/A";
-                    sb.AppendLine($"| {i + 1} | {EscapeMarkdown(productName)} | €{product.Price:F2} | {EscapeMarkdown(product.Brand ?? "N/A")} | {product.ProductID} | {productLink} |");
+                        ? $"[{EscapeMarkdown(productName)}]({product.ProductURL})" 
+                        : EscapeMarkdown(productName);
+                    
+                    sb.AppendLine($"**{i + 1}. {productLink}**  ");
+                    sb.AppendLine($"Prijs: €{product.Price:F2} | Merk: {product.Brand ?? "N/A"} | Product ID: {product.ProductID}");
+                    sb.AppendLine();
                 }
-                sb.AppendLine();
             }
 
-            // Alle producten tabel (eerste 50)
-            sb.AppendLine("## 📋 Product Overzicht (Eerste 50)");
+            // SEO-optimized statistics section
+            sb.AppendLine("## TradeTracker Feed Performance Metrics");
             sb.AppendLine();
-            sb.AppendLine("| ID | Product | Prijs | Merk | Categorie | Link |");
-            sb.AppendLine("|----|---------|-------|------|-----------|----- |");
-            
-            foreach (var product in products.Take(50))
-            {
-                var productName = product.ProductName?.Length > 35 
-                    ? product.ProductName.Substring(0, 32) + "..." 
-                    : product.ProductName ?? "N/A";
-                var price = product.Price > 0 ? $"€{product.Price:F2}" : "N/A";
-                var productLink = !string.IsNullOrEmpty(product.ProductURL) 
-                    ? $"[🔗]({product.ProductURL})" 
-                    : "N/A";
-                
-                sb.AppendLine($"| {product.ProductID} | {EscapeMarkdown(productName)} | {price} | {EscapeMarkdown(product.Brand ?? "N/A")} | {EscapeMarkdown(product.Category ?? "N/A")} | {productLink} |");
-            }
-            
-            if (products.Count > 50)
-            {
-                sb.AppendLine();
-                sb.AppendLine($"*... en nog {products.Count - 50} producten meer. Zie het JSON bestand voor de complete lijst.*");
-            }
-
+            sb.AppendLine($"### Affiliate Marketing Potentieel - {primaryBrand}");
             sb.AppendLine();
+            sb.AppendLine("**Kernstatistieken voor affiliate success:**");
+            sb.AppendLine();
+            sb.AppendLine($"| Metric | Waarde | Affiliate Impact |");
+            sb.AppendLine("|--------|--------|------------------|");
+            sb.AppendLine($"| **Totaal Producten** | {products.Count:N0} | Grote productkeuze verhoogt conversie |");
+            if (productsWithPrice.Any())
+            {
+                sb.AppendLine($"| **Prijsbereik** | €{minPrice:F2} - €{maxPrice:F2} | Breed doelgroepbereik |");
+                sb.AppendLine($"| **Gem. Orderwaarde** | €{avgPrice:F2} | {(avgPrice > 50 ? "Hoge commissie potentieel" : "Snelle conversies mogelijk")} |");
+            }
+            sb.AppendLine($"| **Merken** | {uniqueBrands.Count} | {(uniqueBrands.Count > 1 ? "Vergelijkingsmogelijkheden" : "Merkfocus strategie")} |");
+            if (uniqueCategories.Any())
+            {
+                sb.AppendLine($"| **Categorieën** | {uniqueCategories.Count} | Niche marketing kansen |");
+            }
+            sb.AppendLine();
+            
+            // SEO-focused affiliate section
+            sb.AppendLine($"## Affiliate Marketing Strategieën voor {primaryBrand}");
+            sb.AppendLine();
+            sb.AppendLine("### 🎯 Content Marketing Kansen");
+            sb.AppendLine();
+            sb.AppendLine("**Voor Content Creators & Bloggers:**");
+            sb.AppendLine("- Productreviews met focus op prijs-kwaliteit verhouding");
+            sb.AppendLine("- \"Best of\" lijsten per productcategorie");
+            sb.AppendLine($"- Seizoensgebonden content (gemiddelde prijs €{avgPrice:F2} past bij diverse budgetten)");
+            sb.AppendLine();
+            
+            sb.AppendLine("**Voor Vergelijkingswebsites:**");
+            sb.AppendLine($"- Prijsvergelijkingen binnen €{minPrice:F2} - €{maxPrice:F2} range");
+            sb.AppendLine("- Feature comparisons tussen verschillende producten");
+            sb.AppendLine("- \"Beste deal\" alerts voor budget-bewuste shoppers");
+            sb.AppendLine();
+            
+            sb.AppendLine("### 📱 Social Media & Influencer Marketing");
+            sb.AppendLine();
+            sb.AppendLine("**Instagram & TikTok Strategieën:**");
+            sb.AppendLine($"- Product showcases (ideaal voor {(avgPrice < 30 ? "impulse purchases" : "considered purchases")})");
+            sb.AppendLine("- Before/after content voor transformatie producten");
+            sb.AppendLine("- Unboxing videos voor nieuwe producten");
+            sb.AppendLine();
+            
+            sb.AppendLine("### 🔍 SEO & Organische Traffic");
+            sb.AppendLine();
+            sb.AppendLine("**Long-tail Keywords:**");
+            sb.AppendLine($"- \"{primaryBrand.ToLower()} review\"");
+            sb.AppendLine($"- \"{primaryBrand.ToLower()} vergelijking\"");
+            sb.AppendLine($"- \"beste {primaryBrand.ToLower()} producten {DateTime.Now.Year}\"");
+            sb.AppendLine($"- \"{primaryBrand.ToLower()} aanbieding\"");
+            sb.AppendLine();
+            
+            // Updated footer with schema markup hint
             sb.AppendLine("---");
-            sb.AppendLine("*Rapport gegenereerd door TradeTracker Console App*");
+            sb.AppendLine();
+            sb.AppendLine($"**Laatste Update:** {DateTime.Now:dd MMMM yyyy, HH:mm}");
+            sb.AppendLine("**Data Bron:** TradeTracker Affiliate Network");
+            sb.AppendLine($"**Geanalyseerde Producten:** {products.Count:N0}");
+            sb.AppendLine();
+            sb.AppendLine("*Disclaimer: Prijzen en beschikbaarheid kunnen wijzigen. ");
+            sb.AppendLine("Controleer altijd de actuele informatie via de affiliate links voor de meest recente details.*");
+
             
             return sb.ToString();
         }
@@ -559,6 +881,9 @@ namespace TradeTrackerConsoleApp
             Console.WriteLine();
 
             var service = new TradeTrackerService();
+            
+            // Toon beschikbare feeds
+            service.ListAvailableFeeds();
 
             try
             {

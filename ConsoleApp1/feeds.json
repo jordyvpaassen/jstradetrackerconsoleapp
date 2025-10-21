@@ -1,0 +1,68 @@
+{
+  "feeds": [
+    {
+      "id": "123ledspots",
+      "name": "123LED Spots",
+      "description": "LED verlichting en spots voor thuis en kantoor",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2215357&categoryType=2&additionalType=2",
+      "category": "verlichting",
+      "active": true
+    },
+    {
+      "id": "123jaloezie",
+      "name": "123 Jaloezie",
+      "description": "Raamdecoratie, jaloezieën en gordijnen",
+      "url": "https://pf.tradetracker.net/?aid=439092&encoding=utf-8&type=json&fid=2451096&r=xtrmbbq123jaloezie&categoryType=2&additionalType=2",
+      "category": "raamdecoratie",
+      "active": true
+    },
+    {
+      "id": "aliexpress",
+      "name": "AliExpress",
+      "description": "Shop de nieuwste producten van AliExpress",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=565442&categoryType=2&additionalType=2",
+      "category": "online winkelen",
+      "active": true
+    }
+    ,
+    {
+      "id": "Alternate",
+      "name": "Alternate",
+      "description": "Alternate - Elektronica, computers en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1594453&limit=3000&categoryType=2&additionalType=2",
+      "category": "online winkelen",
+      "active": true
+    },
+    {
+      "id": "Aircogarant",
+      "name": "Aircogarant",
+      "description": "Aircogarant - Alles voor thuis, tuin, elektronica en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2220689&categoryType=2&additionalType=2",
+      "category": "online winkelen",
+      "active": true
+    },
+    {
+      "id": "Babycadeauwinkel",
+      "name": "Babycadeauwinkel",
+      "description": "Babycadeauwinkel - Cadeaus en artikelen voor baby's en peuters",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2160195&categoryType=2&additionalType=2",
+      "category": "baby",
+      "active": true
+    },
+    {
+      "id": "Audioshop",
+      "name": "Audioshop",
+      "description": "Audioshop - Muziekinstrumenten, audioapparatuur en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1687778&categoryType=2&additionalType=2",
+      "category": "muziek",
+      "active": true
+    }
+    
+  ],
+  "config": {
+    "defaultFeed": "Audioshop",
+    "outputFormats": ["json", "markdown"],
+    "generateImages": true,
+    "seoOptimized": true
+  }
+}

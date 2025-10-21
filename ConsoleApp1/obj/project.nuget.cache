@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "ihF00xldLF0=",
+  "success": true,
+  "projectFilePath": "/Users/jordyvanpaassen/jstradetrackerconsoleapp/ConsoleApp1/ConsoleApp1.csproj",
+  "expectedPackageFiles": [
+    "/Users/jordyvanpaassen/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

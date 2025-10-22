@@ -88,6 +88,22 @@
         "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1096437&limit=3000&categoryType=2&additionalType=2",
         "category": "online winkelen",
         "active": true
+    },
+    {
+        "id": "Fashionize",
+        "name": "Fashionize",
+        "description": "Fashionize - Mode, kleding en accessoires",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2416424&categoryType=2&additionalType=2",
+        "category": "Mode en Sieraden",
+        "active": true
+    },
+    {
+        "id": "VDCKomerz",
+        "name": "VDCKomerz",
+        "description": "VDCKomerz - grootste online chocolade, snoep, ontbijt, petfood, snacks en koekjes",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2145159&categoryType=2&additionalType=2",
+        "category": "eten en drinken",
+        "active": true
     }
     
   ],

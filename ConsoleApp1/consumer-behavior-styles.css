@@ -1,0 +1,443 @@
+/* Consumer Behavior Analysis - CSS Styling */
+
+/* ===== BASE STYLES ===== */
+.section-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 2rem 0 1.5rem 0;
+  color: #2d3748;
+  border-bottom: 3px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.subsection-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 1.5rem 0 1rem 0;
+  color: #4a5568;
+}
+
+.section-divider {
+  margin: 3rem 0;
+  border: none;
+  border-top: 2px solid #e2e8f0;
+}
+
+/* ===== PREMIUM BEHAVIOR ANALYSIS ===== */
+.premium-behavior-analysis {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  margin: 2rem 0;
+  color: white;
+}
+
+.premium-title {
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.analysis-intro {
+  background: rgba(255,255,255,0.1);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #ffd700;
+}
+
+.consumer-characteristics {
+  background: rgba(255,255,255,0.05);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.characteristics-list li {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ===== PREMIUM PRODUCTS GRID ===== */
+.premium-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.product-card {
+  background: rgba(255,255,255,0.95);
+  color: #2d3748;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+}
+
+.premium-product {
+  border-left: 5px solid #ffd700;
+}
+
+.product-rank {
+  font-size: 1.2rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.product-name {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.product-meta span {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.price {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.brand {
+  background: #bee3f8;
+  color: #2a4365;
+}
+
+.product-id {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+/* ===== CONSUMER BEHAVIOR ANALYSIS ===== */
+.consumer-behavior-analysis {
+  background: #f7fafc;
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  border: 1px solid #e2e8f0;
+}
+
+.analysis-title {
+  color: #2b6cb0;
+}
+
+.analysis-subsection {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.price-psychology {
+  border-left: 4px solid #38b2ac;
+}
+
+.brand-loyalty {
+  border-left: 4px solid #ed8936;
+}
+
+.price-statistics {
+  background: #edf2f7;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.highlight-box {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+}
+
+/* ===== BRAND ANALYSIS ===== */
+.brand-perception-analysis {
+  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  margin: 2rem 0;
+  color: white;
+}
+
+.brand-title {
+  color: #fbb6ce;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.brand-intro {
+  background: rgba(255,255,255,0.1);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.brand-positioning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.brand-item {
+  background: rgba(255,255,255,0.95);
+  color: #2d3748;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.premium.brand-item {
+  border-left: 4px solid #9f7aea;
+}
+
+.mainstream.brand-item {
+  border-left: 4px solid #4299e1;
+}
+
+.budget.brand-item {
+  border-left: 4px solid #48bb78;
+}
+
+.brand-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.brand-category {
+  font-size: 0.85rem;
+  color: #718096;
+  font-style: italic;
+}
+
+.brand-stats {
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+/* ===== CATEGORY PREFERENCES ===== */
+.category-preferences {
+  background: #f0fff4;
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  border: 1px solid #9ae6b4;
+}
+
+.category-title {
+  color: #22543d;
+}
+
+.category-intro {
+  background: rgba(72, 187, 120, 0.1);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.category-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.category-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-left: 4px solid #48bb78;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-name {
+  font-weight: bold;
+  color: #22543d;
+}
+
+.category-stats {
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.category-price {
+  color: #38a169;
+  font-weight: 600;
+}
+
+.dominant-behavior {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+}
+
+/* ===== BUDGET CONSCIOUS BEHAVIOR ===== */
+.budget-conscious-behavior {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  margin: 2rem 0;
+  color: white;
+}
+
+.budget-title {
+  color: #c6f6d5;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.budget-intro {
+  background: rgba(255,255,255,0.1);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.budget-characteristics {
+  background: rgba(255,255,255,0.05);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin: 1.5rem 0;
+  list-style: none;
+}
+
+.budget-characteristics li {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.budget-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.budget-product-card {
+  background: rgba(255,255,255,0.95);
+  color: #2d3748;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  border-left: 5px solid #48bb78;
+  transition: transform 0.3s ease;
+}
+
+.budget-product-card:hover {
+  transform: translateY(-3px);
+}
+
+.budget-product-name {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #2d3748;
+}
+
+.budget-product-meta {
+  background: #f0fff4;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* ===== INSIGHTS AND LISTS ===== */
+.brand-insights, .loyalty-insights {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.brand-insights li, .loyalty-insights li {
+  background: rgba(255,255,255,0.1);
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border-left: 3px solid rgba(255,255,255,0.3);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 2rem;
+  }
+  
+  .premium-products-grid,
+  .brand-positioning-grid,
+  .category-analysis-grid,
+  .budget-products-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .product-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .premium-behavior-analysis,
+  .consumer-behavior-analysis,
+  .brand-perception-analysis,
+  .category-preferences,
+  .budget-conscious-behavior {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 1.8rem;
+  }
+  
+  .subsection-title {
+    font-size: 1.4rem;
+  }
+  
+  .product-card,
+  .budget-product-card {
+    padding: 1rem;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .premium-behavior-analysis,
+  .brand-perception-analysis,
+  .budget-conscious-behavior {
+    background: white !important;
+    color: black !important;
+    border: 2px solid #e2e8f0;
+  }
+  
+  .product-card,
+  .budget-product-card {
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+  }
+}

@@ -18,6 +18,7 @@ namespace TradeTrackerConsoleApp
         public string? Brand { get; set; }
         public string? LastUpdated { get; set; }
         public DateTime ImportDate { get; set; }
+        public string? FeedID { get; set; }
     }
 
     public class FeedConfig
@@ -134,7 +135,8 @@ namespace TradeTrackerConsoleApp
                 var response = await _httpClient.GetStringAsync(apiUrl);
                 Console.WriteLine($"Data ontvangen, grootte: {response.Length} characters");
 
-                var products = ParseJsonData(response);
+                var feedId = _currentFeed?.Id ?? "unknown";
+                var products = ParseJsonData(response, feedId);
                 
                 Console.WriteLine($"Aantal producten verwerkt: {products.Count}");
                 return products;
@@ -146,7 +148,7 @@ namespace TradeTrackerConsoleApp
             }
         }
 
-        private List<TradeTrackerProduct> ParseJsonData(string jsonData)
+        private List<TradeTrackerProduct> ParseJsonData(string jsonData, string feedId)
         {
             var products = new List<TradeTrackerProduct>();
             var importDate = DateTime.Now; // Standaard importdatum is nu
@@ -164,7 +166,7 @@ namespace TradeTrackerConsoleApp
                 
                 foreach (var productToken in productsArray)
                 {
-                    var product = ParseProduct(productToken, importDate);
+                    var product = ParseProduct(productToken, importDate, feedId);
                     if (product != null)
                     {
                         products.Add(product);
@@ -327,13 +329,14 @@ namespace TradeTrackerConsoleApp
             return rootArray;
         }
 
-        private TradeTrackerProduct? ParseProduct(JToken productToken, DateTime importDate)
+        private TradeTrackerProduct? ParseProduct(JToken productToken, DateTime importDate, string feedId)
         {
             try
             {
                 var product = new TradeTrackerProduct
                 {
-                    ImportDate = importDate
+                    ImportDate = importDate,
+                    FeedID = feedId
                 };
 
                 foreach (var property in productToken.Children<JProperty>())
@@ -509,17 +512,18 @@ namespace TradeTrackerConsoleApp
                     Directory.CreateDirectory(imagesDir);
                 }
 
-                var primaryBrand = products.Where(p => !string.IsNullOrEmpty(p.Brand))
+                /*var primaryBrand = products.Where(p => !string.IsNullOrEmpty(p.Brand))
                                          .GroupBy(p => p.Brand)
                                          .OrderByDescending(g => g.Count())
-                                         .FirstOrDefault()?.Key ?? "TradeTracker";
+                                         .FirstOrDefault()?.Key ?? "TradeTracker";*/
 
                 var productsWithPrice = products.Where(p => p.Price > 0).ToList();
                 var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
+                var feed = products.Any() ? products.FirstOrDefault()?.FeedID : "TradeTracker";
 
                 // Genereer SVG afbeelding
-                var svgContent = GenerateSvgImage(primaryBrand, products.Count, avgPrice);
-                
+                var svgContent = GenerateSvgImage(feed, products.Count, avgPrice);
+
                 var imagePath = Path.Combine(imagesDir, imageName);
                 await File.WriteAllTextAsync(imagePath, svgContent);
                 
@@ -531,7 +535,7 @@ namespace TradeTrackerConsoleApp
             }
         }
 
-        private string GenerateSvgImage(string brandName, int productCount, decimal avgPrice)
+        private string GenerateSvgImage(string? brandName, int productCount, decimal avgPrice)
         {
             var svg = $@"<svg width=""800"" height=""400"" xmlns=""http://www.w3.org/2000/svg"">
   <!-- Background gradient -->
@@ -546,39 +550,28 @@ namespace TradeTrackerConsoleApp
     </linearGradient>
   </defs>
   
-  <!-- Background -->
-  <rect width=""800"" height=""400"" fill=""url(#bgGradient)""/>
   
   <!-- Main card -->
   <rect x=""50"" y=""50"" width=""700"" height=""300"" rx=""20"" fill=""url(#cardGradient)"" stroke=""rgba(255,255,255,0.3)"" stroke-width=""2""/>
   
-  <!-- TradeTracker logo area -->
-  <rect x=""70"" y=""70"" width=""60"" height=""60"" rx=""10"" fill=""#FF6B35""/>
-  <text x=""100"" y=""110"" text-anchor=""middle"" fill=""white"" font-family=""Arial, sans-serif"" font-size=""20"" font-weight=""bold"">TT</text>
-  
   <!-- Title -->
-  <text x=""150"" y=""95"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""28"" font-weight=""bold"">TradeTracker Analysis</text>
+  <text x=""150"" y=""95"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""28"" font-weight=""bold"">Rokify Analysis</text>
   <text x=""150"" y=""125"" fill=""#4A5568"" font-family=""Arial, sans-serif"" font-size=""22"">{EscapeSvgText(brandName)}</text>
   
   <!-- Statistics -->
   <g transform=""translate(70, 160)"">
     <!-- Product count -->
-    <rect x=""0"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
-    <text x=""90"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">PRODUCTEN</text>
-    <text x=""90"" y=""50"" text-anchor=""middle"" fill=""#667eea"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">{productCount:N0}</text>
-    <text x=""90"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">items in feed</text>
+    <rect x=""75"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
+    <text x=""150"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">PRODUCTEN</text>
+    <text x=""150"" y=""50"" text-anchor=""middle"" fill=""#667eea"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">{productCount:N0}</text>
+    <text x=""150"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">items in feed</text>
     
     <!-- Average price -->
-    <rect x=""200"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
-    <text x=""290"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">GEM. PRIJS</text>
-    <text x=""290"" y=""50"" text-anchor=""middle"" fill=""#38A169"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">€{avgPrice:F0}</text>
-    <text x=""290"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">per product</text>
+    <rect x=""300"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
+    <text x=""390"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">GEM. PRIJS</text>
+    <text x=""390"" y=""50"" text-anchor=""middle"" fill=""#38A169"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">€{avgPrice:F0}</text>
+    <text x=""390"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">per product</text>
     
-    <!-- Brand info -->
-    <rect x=""400"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
-    <text x=""490"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">AFFILIATE</text>
-    <text x=""490"" y=""50"" text-anchor=""middle"" fill=""#9F7AEA"" font-family=""Arial, sans-serif"" font-size=""20"" font-weight=""bold"">READY</text>
-    <text x=""490"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">marketing</text>
   </g>
   
   <!-- Date -->
@@ -625,12 +618,12 @@ namespace TradeTrackerConsoleApp
             sb.AppendLine("layout: product-page");
             sb.AppendLine($"title: \"{primaryBrand} - Premium Producten Online Shop\"");
             sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
-            sb.AppendLine($"description: \"Shop de beste {primaryBrand} producten online. Van €{minPrice:F2} tot €{maxPrice:F2}. Gratis verzending, 30 dagen retour en de laagste prijsgarantie.\"");
-            sb.AppendLine($"excerpt: \"Ontdek onze selectie van {products.Count} {primaryBrand} producten. Topkwaliteit, scherpe prijzen en snelle levering.\"");
+            sb.AppendLine($"description: \"Shop de beste {feedId} producten online. Van €{minPrice:F2} tot €{maxPrice:F2}. Gratis verzending, 30 dagen retour en de laagste prijsgarantie.\"");
+            sb.AppendLine($"excerpt: \"Ontdek onze selectie van {products.Count} {feedId} producten. Topkwaliteit, scherpe prijzen en snelle levering.\"");
             sb.AppendLine($"img: {imageName}");
             sb.AppendLine($"tags: [{cleanBrandName}, shop, online-winkel, bestsellers, aanbiedingen]");
             sb.AppendLine($"categories: [webshop, producten]");
-            sb.AppendLine($"keywords: \"{primaryBrand} kopen, {primaryBrand} shop, {primaryBrand} aanbieding, online winkel\"");
+            sb.AppendLine($"keywords: \"{feedId} kopen, {feedId} shop, {feedId} aanbieding, online winkel\"");
             sb.AppendLine("author: Webshop Manager");
             sb.AppendLine($"canonical_url: \"/shop-{cleanBrandName.ToLower()}\"");
             sb.AppendLine("sitemap:");
@@ -642,9 +635,9 @@ namespace TradeTrackerConsoleApp
             sb.AppendLine();
 
             // Hero sectie
-            sb.AppendLine($"# 🛒 {primaryBrand} Online Shop");
+            sb.AppendLine($"# {feedId} Online Shop");
             sb.AppendLine();
-            sb.AppendLine($"**Welkom bij de officiële {primaryBrand} webshop!** Ontdek onze collectie van **{products.Count} premium producten** ");
+            sb.AppendLine($"**Welkom bij de officiële {feedId} webshop!** Ontdek onze collectie van **{products.Count} premium producten** ");
             sb.AppendLine($"met prijzen vanaf **€{minPrice:F2}**. ✨ Gratis verzending vanaf €50 • 🚚 Snelle levering • 💯 30 dagen retourrecht");
             sb.AppendLine();
 
@@ -654,7 +647,7 @@ namespace TradeTrackerConsoleApp
             
             if (bestsellers.Any())
             {
-                sb.AppendLine("## 🔥 Bestsellers & Top Producten");
+                sb.AppendLine("## Bestsellers & Top Producten");
                 sb.AppendLine();
                 sb.AppendLine("*Onze meest populaire producten - geliefd door duizenden klanten!*");
                 sb.AppendLine();
@@ -801,7 +794,7 @@ namespace TradeTrackerConsoleApp
             // Call to action
             sb.AppendLine("## 🎯 Klaar om te bestellen?");
             sb.AppendLine();
-            sb.AppendLine($"**Mis deze kans niet!** Onze {primaryBrand} collectie is zeer populair en sommige items zijn beperkt op voorraad. ");
+            sb.AppendLine($"**Mis deze kans niet!** Onze {feedId} collectie is zeer populair en sommige items zijn beperkt op voorraad. ");
             sb.AppendLine("**Bestel vandaag nog** en profiteer van onze speciale actieprijzen!");
             sb.AppendLine();
             sb.AppendLine("---");
@@ -830,182 +823,33 @@ namespace TradeTrackerConsoleApp
             var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
             
             var cleanBrandName = primaryBrand.Replace(".", "").Replace(" ", "");
-            var categoryKeywords = products.Where(p => !string.IsNullOrEmpty(p.Category))
-                                         .Select(p => p.Category)
-                                         .Distinct()
-                                         .Take(5)
-                                         .ToList();
 
-            // Jekyll front matter met consumentenkoopgedrag focus
+            // Jekyll front matter
             sb.AppendLine("---");
             sb.AppendLine("layout: post");
-            sb.AppendLine($"title: \"Consumentenkoopgedrag Analyse: {primaryBrand} - {products.Count} Producten\"");
+            sb.AppendLine($"title: \"Consumentenkoopgedrag Analyse: {feedId} - {products.Count} Producten\"");
             sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
-            sb.AppendLine($"description: \"Diepgaande analyse van consumentenkoopgedrag bij {primaryBrand}. Ontdek kooppatronen, prijsvoorkeuren en populaire productcategorieën van {products.Count} producten.\"");
-            sb.AppendLine($"excerpt: \"Koopgedrag analyse {primaryBrand}: €{minPrice:F2}-€{maxPrice:F2} prijsbereik, gemiddeld €{avgPrice:F2}. Inzichten in consumentenvoorkeuren en aankooppatronen.\"");
+            sb.AppendLine($"description: \"Analyse van consumentenkoopgedrag bij {feedId} met {products.Count} producten.\"");
+            sb.AppendLine($"excerpt: \"Koopgedrag analyse {feedId}: €{minPrice:F2}-€{maxPrice:F2} prijsbereik, gemiddeld €{avgPrice:F2}.\"");
             sb.AppendLine($"img: {imageName}");
-            sb.AppendLine($"tags: [consumentengedrag, koopgedrag, {cleanBrandName}, prijsanalyse, marktonderzoek, e-commerce]");
+            sb.AppendLine($"tags: [consumentengedrag, koopgedrag, {cleanBrandName}, prijsanalyse]");
             sb.AppendLine($"categories: [marktonderzoek, consumentengedrag]");
-            sb.AppendLine($"keywords: \"consumentenkoopgedrag, {primaryBrand}, prijsanalyse, kooppatronen, marktonderzoek, e-commerce trends\"");
             sb.AppendLine("author: Marktonderzoeker");
-            sb.AppendLine($"canonical_url: \"/consumentengedrag-{feedId.ToLower()}-analyse\"");
-            sb.AppendLine("sitemap:");
-            sb.AppendLine("  priority: 0.9");
-            sb.AppendLine("  changefreq: weekly");
-            sb.AppendLine("schema:");
-            sb.AppendLine("  type: Article");
-            sb.AppendLine($"  wordCount: {products.Count * 15 + 1000}");
             sb.AppendLine("---");
             sb.AppendLine();
 
-            // Introductie gericht op consumentenkoopgedrag
-            sb.AppendLine($"Deze **consumentenkoopgedrag analyse van {primaryBrand}** onderzoekt **{products.Count} producten** ");
-            sb.AppendLine($"met een gemiddelde consumentenuitgave van **€{avgPrice:F2}**. Perfect voor marktonderzoekers, retailers ");
-            sb.AppendLine("en merkstrategen die consumentenvoorkeuren en kooppatronen willen begrijpen.");
+            // Introductie
+            sb.AppendLine($"Deze consumentenkoopgedrag analyse van **{feedId}** onderzoekt **{products.Count} producten** ");
+            sb.AppendLine($"met een gemiddelde consumentenuitgave van **€{avgPrice:F2}**.");
             sb.AppendLine();
-            var uniqueBrands = products.Where(p => !string.IsNullOrEmpty(p.Brand))
-                                     .Select(p => p.Brand)
-                                     .Distinct()
-                                     .OrderBy(b => b)
-                                     .ToList();
-            var uniqueCategories = products.Where(p => !string.IsNullOrEmpty(p.Category))
-                                         .Select(p => p.Category)
-                                         .Distinct()
-                                         .OrderBy(c => c)
-                                         .ToList();
-
-            sb.AppendLine("## Consumentenkoopgedrag Analyse");
-            sb.AppendLine();
-            sb.AppendLine($"### Prijspsychologie en Uitgavenpatronen");
-            sb.AppendLine();
-            if (productsWithPrice.Any())
-            {
-                var sortedPrices = productsWithPrice.Select(p => p.Price).OrderBy(p => p).ToList();
-                var medianPrice = sortedPrices.Count % 2 == 0 
-                    ? (sortedPrices[sortedPrices.Count / 2 - 1] + sortedPrices[sortedPrices.Count / 2]) / 2
-                    : sortedPrices[sortedPrices.Count / 2];
-                sb.AppendLine($"Het {primaryBrand} productassortiment toont een prijsspectrum van €{minPrice:F2} tot €{maxPrice:F2}, ");
-                sb.AppendLine($"met een gemiddelde consumentenuitgave van €{avgPrice:F2} en mediaan van €{medianPrice:F2}. ");
-                sb.AppendLine("Dit prijspatroon onthult belangrijke inzichten over het doelgroepgedrag.");
-                sb.AppendLine();
-                
-                // Consumentenpsychologie insights
-                if (avgPrice > medianPrice * 1.2m)
-                {
-                    sb.AppendLine("Koopgedrag Inzicht: Het verschil tussen gemiddelde en mediaanprijs duidt op een segment ");
-                    sb.AppendLine("premium consumenten die bereid zijn significant meer te betalen voor kwaliteit of status.");
-                }
-                else if (avgPrice > 50)
-                {
-                    sb.AppendLine("Koopgedrag Inzicht: De gemiddelde uitgave van €" + avgPrice.ToString("F2") + " suggereert overwogen aankopen ");
-                    sb.AppendLine("waarbij consumenten voldoende tijd nemen voor productonderzoek en vergelijking.");
-                }
-                else
-                {
-                    sb.AppendLine("Koopgedrag Inzicht: Het toegankelijke prijsniveau stimuleert impulskopen en ");
-                    sb.AppendLine("herhalingsaankopen, typisch voor convenience en lifestyle producten.");
-                }
-                sb.AppendLine();
-            }
             
-            sb.AppendLine("### Merkvoorkeur en Loyaliteit Patronen");
-            sb.AppendLine();
-            if (uniqueBrands.Count > 1)
-            {
-                sb.AppendLine($"De diversiteit van {uniqueBrands.Count} verschillende merken toont dat consumenten in dit segment ");
-                sb.AppendLine("vergelijkingsgedrag vertonen en niet gebonden zijn aan één specifiek merk. Dit duidt op:");
-                sb.AppendLine("- Prijs-kwaliteit bewuste consumenten");
-                sb.AppendLine("- Lagere merktrouw in deze productcategorie");
-                sb.AppendLine("- Kansen voor nieuwe merken om marktaandeel te winnen");
-            }
-            else
-            {
-                sb.AppendLine($"De exclusieve focus op {primaryBrand} suggereert een merkgetrouw consumentensegment met:");
-                sb.AppendLine("- Hoge merkherkenning en vertrouwen");
-                sb.AppendLine("- Bereidheid om premiumprijs te betalen voor merkwaarde");
-                sb.AppendLine("- Lagere prijsgevoeligheid binnen het merksegment");
-                sb.AppendLine("- Potentieel voor cross-selling naar gerelateerde producten");
-            }
-            sb.AppendLine();
-
-            // Merkperceptie en prijspositionering analyse
-            if (uniqueBrands.Any() && uniqueBrands.Count > 1)
-            {
-                sb.AppendLine("## Merkperceptie en Prijspositionering");
-                sb.AppendLine();
-                sb.AppendLine("De merkanalyse toont interessante consumentenvoorkeuren en prijsbereidheid per merk:");
-                sb.AppendLine();
-                
-                var brandPriceAnalysis = uniqueBrands.Take(10).Select(brand => new
-                {
-                    Brand = brand,
-                    Count = products.Count(p => p.Brand == brand),
-                    AvgPrice = products.Where(p => p.Brand == brand && p.Price > 0).Select(p => p.Price).DefaultIfEmpty(0).Average()
-                }).OrderByDescending(b => b.AvgPrice).ToList();
-
-                foreach (var brandInfo in brandPriceAnalysis)
-                {
-                    string priceCategory = brandInfo.AvgPrice > avgPrice * 1.2m ? "Premium" :
-                                         brandInfo.AvgPrice < avgPrice * 0.8m ? "Budget" : 
-                                         "Mainstream";
-                    sb.AppendLine($"- {brandInfo.Brand} ({priceCategory}): {brandInfo.Count} producten, gemiddeld €{brandInfo.AvgPrice:F2}");
-                }
-                if (uniqueBrands.Count > 10)
-                {
-                    sb.AppendLine($"- *... en nog {uniqueBrands.Count - 10} andere merken*");
-                }
-                sb.AppendLine();
-                
-                sb.AppendLine("Consumentengedrag inzicht: De prijsverschillen tussen merken tonen hoe merkperceptie ");
-                sb.AppendLine("de bereidheid tot betalen beïnvloedt en segmentatie binnen de markt creëert.");
-                sb.AppendLine();
-            }
-
-            // Categorievoorkeuren en koopgedrag
-            if (uniqueCategories.Any())
-            {
-                sb.AppendLine("## �️ Consumentenvoorkeuren per Categorie");
-                sb.AppendLine();
-                sb.AppendLine("De verdeling over productcategorieën toont waar consumenten hun prioriteiten leggen:");
-                sb.AppendLine();
-                
-                var categoryAnalysis = uniqueCategories.Take(10).Select(category => new
-                {
-                    Category = category,
-                    Count = products.Count(p => p.Category == category),
-                    AvgPrice = products.Where(p => p.Category == category && p.Price > 0).Select(p => p.Price).DefaultIfEmpty(0).Average()
-                }).OrderByDescending(c => c.Count).ToList();
-
-                foreach (var catInfo in categoryAnalysis)
-                {
-                    var percentage = (catInfo.Count * 100.0 / products.Count);
-                    sb.AppendLine($"- {catInfo.Category}: {catInfo.Count} producten ({percentage:F1}%) - gemiddeld €{catInfo.AvgPrice:F2}");
-                }
-                sb.AppendLine();
-                
-                var topCategory = categoryAnalysis.FirstOrDefault();
-                if (topCategory != null)
-                {
-                    sb.AppendLine($"Dominant koopgedrag: De focus op {topCategory.Category} ({topCategory.Count} producten) ");
-                    sb.AppendLine("suggereert dat dit de primaire interesse van het doelsegment vormt.");
-                }
-                sb.AppendLine();
-            }
-
-            // Premium koopgedrag analyse
+            // Premium producten analyse
             var topExpensive = productsWithPrice.OrderByDescending(p => p.Price).Take(5).ToList();
             if (topExpensive.Any())
             {
-                sb.AppendLine("## Premium Consumentengedrag");
+                sb.AppendLine("## Premium Producten");
                 sb.AppendLine();
-                sb.AppendLine("Analyse van de duurste producten onthult het gedrag van statusbewuste consumenten ");
-                sb.AppendLine("die bereid zijn significant meer te investeren. Deze groep kenmerkt zich door:");
-                sb.AppendLine();
-                sb.AppendLine("- Kwaliteit boven prijs mentaliteit");
-                sb.AppendLine("- Uitgebreid onderzoek voor grote aankopen");
-                sb.AppendLine("- Merkgetrouwheid en statusoverweging");
-                sb.AppendLine();
-                sb.AppendLine("### Top Premium Producten:");
+                sb.AppendLine("De duurste producten in de collectie:");
                 sb.AppendLine();
                 
                 for (int i = 0; i < topExpensive.Count; i++)
@@ -1016,141 +860,94 @@ namespace TradeTrackerConsoleApp
                         ? $"[{EscapeMarkdown(productName)}]({product.ProductURL})" 
                         : EscapeMarkdown(productName);
                     
-                    sb.AppendLine($"**{i + 1}. {productLink}**  ");
-                    sb.AppendLine($"Prijs: €{product.Price:F2} | Merk: {product.Brand ?? "N/A"} | Product ID: {product.ProductID}");
-                    if (!string.IsNullOrEmpty(product.Description))
-                    {
-                        var shortDesc = product.Description.Length > 100 
-                            ? product.Description.Substring(0, 97) + "..." 
-                            : product.Description;
-                        sb.AppendLine($"*{EscapeMarkdown(shortDesc)}*");
-                    }
-                    sb.AppendLine();
+                    sb.AppendLine($"{i + 1}. {productLink} - €{product.Price:F2}");
                 }
+                sb.AppendLine();
             }
 
-            // Prijsbewust koopgedrag
-            var topCheap = productsWithPrice.Where(p => p.Price > 0).OrderBy(p => p.Price).Take(5).ToList();
-            if (topCheap.Any())
+            // Koopgedrag analyse
+            sb.AppendLine("## Koopgedrag Analyse");
+            sb.AppendLine();
+            
+            // Prijs overzicht
+            sb.AppendLine("### Prijsoverzicht");
+            sb.AppendLine($"- Goedkoopste product: €{minPrice:F2}");
+            sb.AppendLine($"- Duurste product: €{maxPrice:F2}");
+            sb.AppendLine($"- Gemiddelde prijs: €{avgPrice:F2}");
+            sb.AppendLine();
+
+            // Merken
+            var topBrands = products.Where(p => !string.IsNullOrEmpty(p.Brand))
+                                  .GroupBy(p => p.Brand)
+                                  .Where(g => g.Count() > 1)
+                                  .OrderByDescending(g => g.Count())
+                                  .Take(5)
+                                  .ToList();
+            
+            if (topBrands.Any())
             {
-                sb.AppendLine("## Prijsbewust Consumentengedrag");
-                sb.AppendLine();
-                sb.AppendLine("De meest betaalbare producten trekken een prijsgevoelig segment aan dat:");
-                sb.AppendLine();
-                sb.AppendLine("- Waarde-voor-geld als hoofdcriterium hanteert");
-                sb.AppendLine("- Snelle beslissingen neemt bij aantrekkelijke prijzen");
-                sb.AppendLine("- Impulskopen doet bij kortingen");
-                sb.AppendLine("- Minder merkgevoelig is");
-                sb.AppendLine();
-                sb.AppendLine("### Toegankelijke Prijsopties:");
-                sb.AppendLine();
-                
-                for (int i = 0; i < topCheap.Count; i++)
+                sb.AppendLine("### Top Merken");
+                foreach (var brandGroup in topBrands)
                 {
-                    var product = topCheap[i];
+                    sb.AppendLine($"- {brandGroup.Key}: {brandGroup.Count()} producten");
+                }
+                sb.AppendLine();
+            }
+
+            // Categorieën
+            var topCategories = products.Where(p => !string.IsNullOrEmpty(p.Category))
+                                      .GroupBy(p => p.Category)
+                                      .Where(g => g.Count() > 1)
+                                      .OrderByDescending(g => g.Count())
+                                      .Take(5)
+                                      .ToList();
+            
+            if (topCategories.Any())
+            {
+                sb.AppendLine("### Populaire Categorieën");
+                foreach (var categoryGroup in topCategories)
+                {
+                    sb.AppendLine($"- {categoryGroup.Key}: {categoryGroup.Count()} producten");
+                }
+                sb.AppendLine();
+            }
+
+            // Budget producten
+            var budgetProducts = productsWithPrice.Where(p => p.Price <= avgPrice * 0.7m).Take(5).ToList();
+            if (budgetProducts.Any())
+            {
+                sb.AppendLine("### Budget Vriendelijke Opties");
+                foreach (var product in budgetProducts)
+                {
                     var productName = product.ProductName ?? "Onbekend product";
                     var productLink = !string.IsNullOrEmpty(product.ProductURL) 
                         ? $"[{EscapeMarkdown(productName)}]({product.ProductURL})" 
                         : EscapeMarkdown(productName);
-                    
-                    sb.AppendLine($"**{i + 1}. {productLink}**  ");
-                    sb.AppendLine($"Prijs: €{product.Price:F2} | Merk: {product.Brand ?? "N/A"} | Product ID: {product.ProductID}");
-                    sb.AppendLine();
+                    sb.AppendLine($"- {productLink} - €{product.Price:F2}");
                 }
+                sb.AppendLine();
             }
 
-            // Consumentengedrag samenvattende statistieken
-            sb.AppendLine("## Consumentengedrag Samenvatting");
+            // Statistieken tabel
+            sb.AppendLine("### Markt Statistieken");
+            sb.AppendLine("| Statistiek | Waarde |");
+            sb.AppendLine("|------------|--------|");
+            sb.AppendLine($"| Totaal Producten | {products.Count} |");
+            sb.AppendLine($"| Producten met Prijs | {productsWithPrice.Count} |");
+            sb.AppendLine($"| Verschillende Merken | {products.Where(p => !string.IsNullOrEmpty(p.Brand)).Select(p => p.Brand).Distinct().Count()} |");
+            sb.AppendLine($"| Verschillende Categorieën | {products.Where(p => !string.IsNullOrEmpty(p.Category)).Select(p => p.Category).Distinct().Count()} |");
+            sb.AppendLine($"| Gemiddelde Prijs | €{avgPrice:F2} |");
+            sb.AppendLine($"| Mediaan Prijs | €{(productsWithPrice.Any() ? productsWithPrice.OrderBy(p => p.Price).Skip(productsWithPrice.Count / 2).FirstOrDefault()?.Price ?? 0 : 0):F2} |");
             sb.AppendLine();
-            sb.AppendLine($"### Marktinzichten - {primaryBrand}");
-            sb.AppendLine();
-            sb.AppendLine("Kernstatistieken voor consumentengedrag analyse:");
-            sb.AppendLine();
-            sb.AppendLine($"| Gedragsindicator | Waarde | Consumentenimplicatie |");
-            sb.AppendLine("|------------------|--------|----------------------|");
-            sb.AppendLine($"| **Productdiversiteit** | {products.Count:N0} producten | {(products.Count > 100 ? "Uitgebreide keuzemogelijkheden" : "Gefocuste selectie")} |");
-            if (productsWithPrice.Any())
-            {
-                sb.AppendLine($"| **Uitgavenspectrum** | €{minPrice:F2} - €{maxPrice:F2} | {(maxPrice > minPrice * 10 ? "Sterke prijssegmentatie" : "Homogeen prijsniveau")} |");
-                sb.AppendLine($"| **Gem. Besteding** | €{avgPrice:F2} | {(avgPrice > 50 ? "Overwogen aankopen" : "Impulsgevoelige aankopen")} |");
-            }
-            sb.AppendLine($"| **Merkdiversiteit** | {uniqueBrands.Count} merken | {(uniqueBrands.Count > 1 ? "Vergelijkend koopgedrag" : "Merkgetrouwheid dominant")} |");
-            if (uniqueCategories.Any())
-            {
-                sb.AppendLine($"| **Interessegebieden** | {uniqueCategories.Count} categorieën | Gevarieerde consumentenbehoeften |");
-            }
-            sb.AppendLine();
-            
-            // Consumentengedrag strategische conclusies
-            sb.AppendLine($"## Strategische Marktinzichten - {primaryBrand}");
-            sb.AppendLine();
-            sb.AppendLine("### Consumentenprofilering");
-            sb.AppendLine();
-            sb.AppendLine("Primaire Doelgroep Karakteristieken:");
-            if (avgPrice > 75)
-            {
-                sb.AppendLine("- Premium segment: Kwaliteitsbewuste consumenten");
-                sb.AppendLine("- Overwogen aankoopproces: Uitgebreid onderzoek voor aankoop");
-                sb.AppendLine("- Merkgevoeligheid: Hoge waarde gehecht aan merkreputation");
-                sb.AppendLine("- Lagere prijselasticiteit: Minder gevoelig voor prijswijzigingen");
-            }
-            else if (avgPrice > 30)
-            {
-                sb.AppendLine("- Mainstream consumenten: Balans tussen prijs en kwaliteit");
-                sb.AppendLine("- Vergelijkend gedrag: Shoppt rond voor beste deal");
-                sb.AppendLine("- Promotiegevoelig: Reageert op kortingsacties");  
-                sb.AppendLine("- Review-afhankelijk: Beïnvloed door online beoordelingen");
-            }
-            else
-            {
-                sb.AppendLine("- Prijsbewust segment: Prijs als primaire beslissingsfactor");
-                sb.AppendLine("- Impulsief koopgedrag: Snelle beslissingen bij goede deals");
-                sb.AppendLine("- Minder merkgevoelig: Focus op functionaliteit boven status");
-                sb.AppendLine("- Hoge volume potentieel: Frequent terugkerende aankopen");
-            }
-            sb.AppendLine();
-            
-            sb.AppendLine("### 🎬 Aanbevelingen voor Marktbenadering");
-            sb.AppendLine();
-            if (uniqueCategories.Count > 3)
-            {
-                sb.AppendLine("**Multi-categorie strategie**: De diversiteit aan productcategorieën vereist ");
-                sb.AppendLine("**gesegmenteerde marketing** per categorie met aangepaste boodschappen.");
-            }
-            else
-            {
-                sb.AppendLine("**Niche focus strategie**: De beperkte categorieën maken **diepgaande specialisatie** ");
-                sb.AppendLine("en **expertise-positionering** mogelijk binnen dit segment.");
-            }
-            sb.AppendLine();
-            
-            sb.AppendLine("### � Seizoen- en Trendgevoeligheid");
-            sb.AppendLine();
-            if (avgPrice > 50)
-            {
-                sb.AppendLine("- **Geplande aankopen**: Vaak gekoppeld aan specifieke gebeurtenissen");
-                sb.AppendLine("- **Seizoensinvloeden**: Black Friday, kerst, en andere shopping events");
-                sb.AppendLine("- **Langere besluitvorming**: Meerdere touchpoints nodig voor conversie");
-            }
-            else
-            {
-                sb.AppendLine("- **Impulsgevoelige timing**: Social media en trending products");
-                sb.AppendLine("- **Jaar-rond potentieel**: Minder seizoensafhankelijk");
-                sb.AppendLine("- **Snelle trend adoptie**: Early adopters van nieuwe producten");
-            }
-            sb.AppendLine();
-            
-            // Updated footer with schema markup hint
+
             sb.AppendLine("---");
             sb.AppendLine();
             sb.AppendLine($"Laatste Update: {DateTime.Now:dd MMMM yyyy, HH:mm}");
-            sb.AppendLine("Data Bron: TradeTracker Marktdata");
+            sb.AppendLine($"Data Bron: TradeTracker Marktdata");
             sb.AppendLine($"Geanalyseerde Producten: {products.Count:N0}");
             sb.AppendLine();
-            sb.AppendLine("*Disclaimer: Deze analyse is gebaseerd op beschikbare marktdata en prijzen kunnen wijzigen. ");
-            sb.AppendLine("Gebruik deze inzichten als richtlijn voor consumentengedrag trends en marktonderzoek.*");
+            sb.AppendLine("*Disclaimer: Deze analyse is gebaseerd op beschikbare marktdata en prijzen kunnen wijzigen.*");
 
-            
             return sb.ToString();
         }
 

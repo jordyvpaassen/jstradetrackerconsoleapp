@@ -1,0 +1,45 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.9);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.7);stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  
+  <!-- Main card -->
+  <rect x="50" y="50" width="700" height="300" rx="20" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  
+  <!-- Title -->
+  <text x="150" y="95" fill="#2D3748" font-family="Arial, sans-serif" font-size="28" font-weight="bold">Rokify Analysis</text>
+  <text x="150" y="125" fill="#4A5568" font-family="Arial, sans-serif" font-size="22">VDCKomerz</text>
+  
+  <!-- Statistics -->
+  <g transform="translate(70, 160)">
+    <!-- Product count -->
+    <rect x="75" y="0" width="180" height="80" rx="10" fill="rgba(255,255,255,0.8)" stroke="#E2E8F0" stroke-width="1"/>
+    <text x="150" y="25" text-anchor="middle" fill="#2D3748" font-family="Arial, sans-serif" font-size="14" font-weight="bold">PRODUCTEN</text>
+    <text x="150" y="50" text-anchor="middle" fill="#667eea" font-family="Arial, sans-serif" font-size="24" font-weight="bold">706</text>
+    <text x="150" y="70" text-anchor="middle" fill="#718096" font-family="Arial, sans-serif" font-size="12">items in feed</text>
+    
+    <!-- Average price -->
+    <rect x="300" y="0" width="180" height="80" rx="10" fill="rgba(255,255,255,0.8)" stroke="#E2E8F0" stroke-width="1"/>
+    <text x="390" y="25" text-anchor="middle" fill="#2D3748" font-family="Arial, sans-serif" font-size="14" font-weight="bold">GEM. PRIJS</text>
+    <text x="390" y="50" text-anchor="middle" fill="#38A169" font-family="Arial, sans-serif" font-size="24" font-weight="bold">€24</text>
+    <text x="390" y="70" text-anchor="middle" fill="#718096" font-family="Arial, sans-serif" font-size="12">per product</text>
+    
+  </g>
+  
+  <!-- Date -->
+  <text x="720" y="330" text-anchor="end" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="12">22-10-2025</text>
+  
+  <!-- Decorative elements -->
+  <circle cx="650" cy="120" r="30" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="680" cy="90" r="20" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="720" cy="140" r="25" fill="rgba(255,255,255,0.08)"/>
+</svg>

@@ -481,14 +481,14 @@ namespace TradeTrackerConsoleApp
                 var fileName = $"{datePrefix}-{feedId}-report-{timeStamp}.markdown";
                 var imageName = $"{datePrefix}-{feedId}-{timeStamp}.svg";
                 
-                var markdown = GenerateMarkdownReport(products, imageName, feedId);
-                await File.WriteAllTextAsync(fileName, markdown);
-                Console.WriteLine($"Rapport opgeslagen in Markdown bestand: {fileName}");
+                //var markdown = GenerateMarkdownReport(products, imageName, feedId);
+                //await File.WriteAllTextAsync(fileName, markdown);
+                //Console.WriteLine($"Rapport opgeslagen in Markdown bestand: {fileName}");
                 
                 // Genereer verkooppagina
                 var salesPageMarkdown = GenerateSalesPageMarkdown(products, imageName, feedId);
                 var salesPageTimestamp = DateTime.Now.ToString("yyyy-MM-dd");
-                var salesPageFileName = $"{salesPageTimestamp}-verkoop-{feedId}.markdown";
+                var salesPageFileName = $"{salesPageTimestamp}-verkoop-{feedId}-{timeStamp}.markdown";
                 await File.WriteAllTextAsync(salesPageFileName, salesPageMarkdown);
                 Console.WriteLine($"Verkooppagina opgeslagen: {salesPageFileName}");
                 
@@ -612,10 +612,10 @@ namespace TradeTrackerConsoleApp
             var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
             
             var cleanBrandName = primaryBrand.Replace(".", "").Replace(" ", "");
-
+            var timeStamp = importDate.ToString("HHmmss");
             // Jekyll front matter voor verkooppagina
             sb.AppendLine("---");
-            sb.AppendLine("layout: product-page");
+            sb.AppendLine("layout: post");
             sb.AppendLine($"title: \"{primaryBrand} - Premium Producten Online Shop\"");
             sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
             sb.AppendLine($"description: \"Shop de beste {feedId} producten online. Van €{minPrice:F2} tot €{maxPrice:F2}. Gratis verzending, 30 dagen retour en de laagste prijsgarantie.\"");
@@ -625,7 +625,7 @@ namespace TradeTrackerConsoleApp
             sb.AppendLine($"categories: [webshop, producten]");
             sb.AppendLine($"keywords: \"{feedId} kopen, {feedId} shop, {feedId} aanbieding, online winkel\"");
             sb.AppendLine("author: Webshop Manager");
-            sb.AppendLine($"canonical_url: \"/shop-{cleanBrandName.ToLower()}\"");
+            sb.AppendLine($"canonical_url: \"/verkoop-{feedId}-{timeStamp}\"");
             sb.AppendLine("sitemap:");
             sb.AppendLine("  priority: 1.0");
             sb.AppendLine("  changefreq: daily");
@@ -662,19 +662,12 @@ namespace TradeTrackerConsoleApp
                     sb.AppendLine($"### 🏆 #{i + 1} Bestseller");
                     sb.AppendLine();
                     
-                    if (!string.IsNullOrEmpty(product.ProductURL))
-                    {
-                        sb.AppendLine($"[![{EscapeMarkdown(productName)}]({product.ProductURL})]({product.ProductURL})");
-                        sb.AppendLine();
-                        sb.AppendLine($"**[🛍️ {EscapeMarkdown(productName)}]({product.ProductURL})**");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"**🛍️ {EscapeMarkdown(productName)}**");
-                    }
+                    
+                    sb.AppendLine($"**🛍️ {EscapeMarkdown(productName)}**");
+                    
                     
                     sb.AppendLine();
-                    sb.AppendLine($"💰 **Speciale Prijs: €{product.Price:F2}** ~~€{originalPrice:F2}~~ *({discount:F0}% korting!)*");
+                    sb.AppendLine($"💰 **Speciale Prijs: €{product.Price:F2}**");
                     sb.AppendLine();
                     sb.AppendLine($"🏷️ **Merk:** {product.Brand ?? "Premium"}");
                     sb.AppendLine($"📦 **Product ID:** {product.ProductID}");
@@ -823,18 +816,25 @@ namespace TradeTrackerConsoleApp
             var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
             
             var cleanBrandName = primaryBrand.Replace(".", "").Replace(" ", "");
-
+            var timeStamp = importDate.ToString("HHmmss");
             // Jekyll front matter
             sb.AppendLine("---");
-            sb.AppendLine("layout: post");
-            sb.AppendLine($"title: \"Consumentenkoopgedrag Analyse: {feedId} - {products.Count} Producten\"");
+            sb.AppendLine("layout: product-page");
+            sb.AppendLine($"title: \"{primaryBrand} - Premium Producten Online Shop\"");
             sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
-            sb.AppendLine($"description: \"Analyse van consumentenkoopgedrag bij {feedId} met {products.Count} producten.\"");
-            sb.AppendLine($"excerpt: \"Koopgedrag analyse {feedId}: €{minPrice:F2}-€{maxPrice:F2} prijsbereik, gemiddeld €{avgPrice:F2}.\"");
+            sb.AppendLine($"description: \"Shop de beste {feedId} producten online. Van €{minPrice:F2} tot €{maxPrice:F2}. Gratis verzending, 30 dagen retour en de laagste prijsgarantie.\"");
+            sb.AppendLine($"excerpt: \"Ontdek onze selectie van {products.Count} {feedId} producten. Topkwaliteit, scherpe prijzen en snelle levering.\"");
             sb.AppendLine($"img: {imageName}");
-            sb.AppendLine($"tags: [consumentengedrag, koopgedrag, {cleanBrandName}, prijsanalyse]");
-            sb.AppendLine($"categories: [marktonderzoek, consumentengedrag]");
-            sb.AppendLine("author: Marktonderzoeker");
+            sb.AppendLine($"tags: [{cleanBrandName}, shop, online-winkel, bestsellers, aanbiedingen]");
+            sb.AppendLine($"categories: [webshop, producten]");
+            sb.AppendLine($"keywords: \"{feedId} kopen, {feedId} shop, {feedId} aanbieding, online winkel\"");
+            sb.AppendLine("author: Rokify");
+            sb.AppendLine($"canonical_url: \"/{feedId}-report-{timeStamp}\"");
+            sb.AppendLine("sitemap:");
+            sb.AppendLine("  priority: 1.0");
+            sb.AppendLine("  changefreq: daily");
+            sb.AppendLine("schema:");
+            sb.AppendLine("  type: Product");
             sb.AppendLine("---");
             sb.AppendLine();
 
@@ -1021,7 +1021,7 @@ namespace TradeTrackerConsoleApp
                     Console.WriteLine($"Gemiddelde prijs: {avgPrice:C}");
 
                     // Sla data op in bestanden
-                    await service.SaveProductsToFileAsync(products);
+                    //await service.SaveProductsToFileAsync(products);
                     await service.SaveProductsToMarkdownAsync(products);
                     
                     // Toon merken als er zijn gevonden

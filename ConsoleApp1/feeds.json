@@ -104,11 +104,43 @@
         "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2145159&categoryType=2&additionalType=2",
         "category": "eten en drinken",
         "active": true
+    },
+    {
+        "id": "Remarkt",
+        "name": "Remarkt",
+        "description": "Remarkt - Huishoudelijke artikelen, keukenapparatuur en meer",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=709693&limit=3000&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
+    },
+    {
+        "id": "eBook",
+        "name": "FeBook",
+        "description": "FeBook - Lezen, ebook, ereader en meer",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=255700&limit=3000&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
+    },
+    {
+        "id": "Yesgifts",
+        "name": "Yesgifts",
+        "description": "Yesgifts - Gepersonaliseerde cadeaus en meer",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=252942&limit=3000&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
+    },
+    {
+        "id": "Drukbedrijf",
+        "name": "Drukbedrijf",
+        "description": "Drukbedrijf - Drukwerk, posters, flyers en meer",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1456606&limit=3000&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
     }
     
   ],
   "config": {
-    "defaultFeed": "HEMA",
+    "defaultFeed": "Drukbedrijf",
     "outputFormats": ["json", "markdown"],
     "generateImages": true,
     "seoOptimized": true

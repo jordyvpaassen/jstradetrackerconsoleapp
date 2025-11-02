@@ -1,0 +1,116 @@
+{
+  "feeds": [
+    {
+      "id": "123ledspots",
+      "name": "123LED Spots",
+      "description": "LED verlichting en spots voor thuis en kantoor",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2215357&categoryType=2&additionalType=2",
+      "category": "verlichting",
+      "active": true
+    },
+    {
+      "id": "123jaloezie",
+      "name": "123 Jaloezie",
+      "description": "Raamdecoratie, jaloezieën en gordijnen",
+      "url": "https://pf.tradetracker.net/?aid=439092&encoding=utf-8&type=json&fid=2451096&r=xtrmbbq123jaloezie&categoryType=2&additionalType=2",
+      "category": "raamdecoratie",
+      "active": true
+    },
+    {
+      "id": "aliexpress",
+      "name": "AliExpress",
+      "description": "Shop de nieuwste producten van AliExpress",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=565442&categoryType=2&additionalType=2&limit=3000",
+      "category": "online winkelen",
+      "active": true
+    }
+    ,
+    {
+      "id": "Alternate",
+      "name": "Alternate",
+      "description": "Alternate - Elektronica, computers en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1594453&limit=3000&categoryType=2&additionalType=2",
+      "category": "online winkelen",
+      "active": true
+    },
+    {
+      "id": "Aircogarant",
+      "name": "Aircogarant",
+      "description": "Aircogarant - Alles voor thuis, tuin, elektronica en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2220689&categoryType=2&additionalType=2",
+      "category": "online winkelen",
+      "active": true
+    },
+    {
+      "id": "Babycadeauwinkel",
+      "name": "Babycadeauwinkel",
+      "description": "Babycadeauwinkel - Cadeaus en artikelen voor baby's en peuters",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2160195&categoryType=2&additionalType=2",
+      "category": "baby",
+      "active": true
+    },
+    {
+      "id": "Audioshop",
+      "name": "Audioshop",
+      "description": "Audioshop - Muziekinstrumenten, audioapparatuur en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1687778&categoryType=2&additionalType=2",
+      "category": "muziek",
+      "active": true
+    },
+    {
+      "id": "PneusOnlineSuisse",
+      "name": "PneusOnlineSuisse",
+      "description": "PneusOnlineSuisse - Banden en accessoires voor auto's",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=410262&limit=3000&categoryType=2&additionalType=2",
+      "category": "auto banden",
+      "active": true
+    },
+    {
+      "id": "TUI",
+      "name": "TUI",
+      "description": "TUI - Vakanties, reizen en meer",
+      "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1063042&categoryType=2&additionalType=2",
+      "category": "Vakanties",
+      "active": true
+    },
+    {
+        "id": "smartphoto",
+        "name": "Smartphoto",
+        "description": "Smartphoto - Fotoproducten en gepersonaliseerde cadeaus",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1195836&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
+    },
+    {
+        "id": "HEMA",
+        "name": "HEMA",
+        "description": "HEMA - Voor alledaagse producten en meer",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=1096437&limit=3000&categoryType=2&additionalType=2",
+        "category": "online winkelen",
+        "active": true
+    },
+    {
+        "id": "Fashionize",
+        "name": "Fashionize",
+        "description": "Fashionize - Mode, kleding en accessoires",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2416424&categoryType=2&additionalType=2",
+        "category": "Mode en Sieraden",
+        "active": true
+    },
+    {
+        "id": "VDCKomerz",
+        "name": "VDCKomerz",
+        "description": "VDCKomerz - grootste online chocolade, snoep, ontbijt, petfood, snacks en koekjes",
+        "url": "https://pf.tradetracker.net/?aid=69238&encoding=utf-8&type=json&fid=2145159&categoryType=2&additionalType=2",
+        "category": "eten en drinken",
+        "active": true
+    }
+    
+  ],
+  "config": {
+    "defaultFeed": "HEMA",
+    "outputFormats": ["markdown"],
+    "generateImages": true,
+    "seoOptimized": true
+  }
+}

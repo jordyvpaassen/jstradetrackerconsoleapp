@@ -123,6 +123,11 @@ namespace TradeTrackerConsoleApp
             return false;
         }
 
+        public List<TradeTrackerFeed> GetAllActiveFeeds()
+        {
+            return _feedConfig?.Feeds?.Where(f => f.Active).ToList() ?? new List<TradeTrackerFeed>();
+        }
+
         public async Task<List<TradeTrackerProduct>> GetProductsAsync()
         {
             try
@@ -451,23 +456,44 @@ namespace TradeTrackerConsoleApp
             }
         }
 
-        public async Task SaveProductsToFileAsync(List<TradeTrackerProduct> products)
+        private string CreateDailyFolderStructure(DateTime date, string subFolder = "", bool useImgFolder = false)
         {
-            try
+            var year = date.ToString("yyyy");
+            var month = date.ToString("MM");
+            var day = date.ToString("dd");
+            
+            string folderPath;
+            
+            if (useImgFolder)
             {
-                var dateTime = DateTime.Now;
-                var datePrefix = dateTime.ToString("yyyy-MM-dd");
-                var timeStamp = dateTime.ToString("HHmmss");
-                var feedId = _currentFeed?.Id ?? "unknown";
-                var fileName = $"{datePrefix}-{feedId}-products-{timeStamp}.json";
-                var json = JsonConvert.SerializeObject(products, Formatting.Indented);
-                await File.WriteAllTextAsync(fileName, json);
-                Console.WriteLine($"Producten opgeslagen in JSON bestand: {fileName}");
+                // Create the base img folder first
+                var baseImgFolder = "img";
+                if (!Directory.Exists(baseImgFolder))
+                {
+                    Directory.CreateDirectory(baseImgFolder);
+                }
+                
+                // Create the date structure inside img folder
+                folderPath = Path.Combine(baseImgFolder, year, month, day);
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"Fout bij opslaan naar JSON bestand: {ex.Message}");
+                // Create the date structure in root
+                folderPath = Path.Combine(year, month, day);
             }
+            
+            if (!string.IsNullOrEmpty(subFolder))
+            {
+                folderPath = Path.Combine(folderPath, subFolder);
+            }
+            
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+                Console.WriteLine($"Folder structuur aangemaakt: {folderPath}");
+            }
+            
+            return folderPath;
         }
 
         public async Task SaveProductsToMarkdownAsync(List<TradeTrackerProduct> products)
@@ -478,22 +504,27 @@ namespace TradeTrackerConsoleApp
                 var datePrefix = dateTime.ToString("yyyy-MM-dd");
                 var timeStamp = dateTime.ToString("HHmmss");
                 var feedId = _currentFeed?.Id ?? "unknown";
+                
+                // Create daily folder structure for reports in root
+                var reportFolderPath = CreateDailyFolderStructure(dateTime, "reports", useImgFolder: false);
+                
                 var fileName = $"{datePrefix}-{feedId}-report-{timeStamp}.markdown";
                 var imageName = $"{datePrefix}-{feedId}-{timeStamp}.svg";
+                var fullPath = Path.Combine(reportFolderPath, fileName);
                 
-                var markdown = GenerateMarkdownReport(products, imageName, feedId);
-                await File.WriteAllTextAsync(fileName, markdown);
-                Console.WriteLine($"Rapport opgeslagen in Markdown bestand: {fileName}");
+                
+                //var markdown = GenerateMarkdownReport(products, feedId);
+                //await File.WriteAllTextAsync(fullPath, markdown);
+                //Console.WriteLine($"Rapport opgeslagen in Markdown bestand: {fullPath}");
                 
                 // Genereer verkooppagina
-                var salesPageMarkdown = GenerateSalesPageMarkdown(products, imageName, feedId);
+                var salesPageMarkdown = GenerateSalesPageMarkdown(products, feedId);
                 var salesPageTimestamp = DateTime.Now.ToString("yyyy-MM-dd");
                 var salesPageFileName = $"{salesPageTimestamp}-verkoop-{feedId}.markdown";
-                await File.WriteAllTextAsync(salesPageFileName, salesPageMarkdown);
-                Console.WriteLine($"Verkooppagina opgeslagen: {salesPageFileName}");
+                var salesPageFullPath = Path.Combine(reportFolderPath, salesPageFileName);
+                await File.WriteAllTextAsync(salesPageFullPath, salesPageMarkdown);
+                Console.WriteLine($"Verkooppagina opgeslagen: {salesPageFullPath}");
                 
-                // Genereer en sla afbeelding op
-                await GenerateBlogImageAsync(products, imageName);
             }
             catch (Exception ex)
             {
@@ -501,131 +532,33 @@ namespace TradeTrackerConsoleApp
             }
         }
 
-        public async Task GenerateBlogImageAsync(List<TradeTrackerProduct> products, string imageName)
-        {
-            try
-            {
-                // Maak img directory aan als deze niet bestaat
-                var imagesDir = "img";
-                if (!Directory.Exists(imagesDir))
-                {
-                    Directory.CreateDirectory(imagesDir);
-                }
-
-                /*var primaryBrand = products.Where(p => !string.IsNullOrEmpty(p.Brand))
-                                         .GroupBy(p => p.Brand)
-                                         .OrderByDescending(g => g.Count())
-                                         .FirstOrDefault()?.Key ?? "TradeTracker";*/
-
-                var productsWithPrice = products.Where(p => p.Price > 0).ToList();
-                var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
-                var feed = products.Any() ? products.FirstOrDefault()?.FeedID : "TradeTracker";
-
-                // Genereer SVG afbeelding
-                var svgContent = GenerateSvgImage(feed, products.Count, avgPrice);
-
-                var imagePath = Path.Combine(imagesDir, imageName);
-                await File.WriteAllTextAsync(imagePath, svgContent);
-                
-                Console.WriteLine($"Blog afbeelding opgeslagen: {imagePath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Fout bij genereren afbeelding: {ex.Message}");
-            }
-        }
-
-        private string GenerateSvgImage(string? brandName, int productCount, decimal avgPrice)
-        {
-            var svg = $@"<svg width=""800"" height=""400"" xmlns=""http://www.w3.org/2000/svg"">
-  <!-- Background gradient -->
-  <defs>
-    <linearGradient id=""bgGradient"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
-      <stop offset=""0%"" style=""stop-color:#667eea;stop-opacity:1"" />
-      <stop offset=""100%"" style=""stop-color:#764ba2;stop-opacity:1"" />
-    </linearGradient>
-    <linearGradient id=""cardGradient"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
-      <stop offset=""0%"" style=""stop-color:rgba(255,255,255,0.9);stop-opacity:1"" />
-      <stop offset=""100%"" style=""stop-color:rgba(255,255,255,0.7);stop-opacity:1"" />
-    </linearGradient>
-  </defs>
-  
-  
-  <!-- Main card -->
-  <rect x=""50"" y=""50"" width=""700"" height=""300"" rx=""20"" fill=""url(#cardGradient)"" stroke=""rgba(255,255,255,0.3)"" stroke-width=""2""/>
-  
-  <!-- Title -->
-  <text x=""150"" y=""95"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""28"" font-weight=""bold"">Rokify Analysis</text>
-  <text x=""150"" y=""125"" fill=""#4A5568"" font-family=""Arial, sans-serif"" font-size=""22"">{EscapeSvgText(brandName)}</text>
-  
-  <!-- Statistics -->
-  <g transform=""translate(70, 160)"">
-    <!-- Product count -->
-    <rect x=""75"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
-    <text x=""150"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">PRODUCTEN</text>
-    <text x=""150"" y=""50"" text-anchor=""middle"" fill=""#667eea"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">{productCount:N0}</text>
-    <text x=""150"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">items in feed</text>
-    
-    <!-- Average price -->
-    <rect x=""300"" y=""0"" width=""180"" height=""80"" rx=""10"" fill=""rgba(255,255,255,0.8)"" stroke=""#E2E8F0"" stroke-width=""1""/>
-    <text x=""390"" y=""25"" text-anchor=""middle"" fill=""#2D3748"" font-family=""Arial, sans-serif"" font-size=""14"" font-weight=""bold"">GEM. PRIJS</text>
-    <text x=""390"" y=""50"" text-anchor=""middle"" fill=""#38A169"" font-family=""Arial, sans-serif"" font-size=""24"" font-weight=""bold"">€{avgPrice:F0}</text>
-    <text x=""390"" y=""70"" text-anchor=""middle"" fill=""#718096"" font-family=""Arial, sans-serif"" font-size=""12"">per product</text>
-    
-  </g>
-  
-  <!-- Date -->
-  <text x=""720"" y=""330"" text-anchor=""end"" fill=""rgba(255,255,255,0.8)"" font-family=""Arial, sans-serif"" font-size=""12"">{DateTime.Now:dd-MM-yyyy}</text>
-  
-  <!-- Decorative elements -->
-  <circle cx=""650"" cy=""120"" r=""30"" fill=""rgba(255,255,255,0.1)""/>
-  <circle cx=""680"" cy=""90"" r=""20"" fill=""rgba(255,255,255,0.05)""/>
-  <circle cx=""720"" cy=""140"" r=""25"" fill=""rgba(255,255,255,0.08)""/>
-</svg>";
-
-            return svg;
-        }
-
-        private string EscapeSvgText(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return text;
-            
-            return text.Replace("&", "&amp;")
-                      .Replace("<", "&lt;")
-                      .Replace(">", "&gt;")
-                      .Replace("\"", "&quot;")
-                      .Replace("'", "&apos;");
-        }
-
-        private string GenerateSalesPageMarkdown(List<TradeTrackerProduct> products, string imageName, string feedId)
+        private string GenerateSalesPageMarkdown(List<TradeTrackerProduct> products, string feedId)
         {
             var sb = new System.Text.StringBuilder();
             var importDate = products.FirstOrDefault()?.ImportDate ?? DateTime.Now;
             var primaryBrand = products.Where(p => !string.IsNullOrEmpty(p.Brand))
                                      .GroupBy(p => p.Brand)
                                      .OrderByDescending(g => g.Count())
-                                     .FirstOrDefault()?.Key ?? "Unknown";
+                                     .FirstOrDefault()?.Key ?? feedId;
 
             var productsWithPrice = products.Where(p => p.Price > 0).ToList();
             var minPrice = productsWithPrice.Any() ? productsWithPrice.Min(p => p.Price) : 0;
             var maxPrice = productsWithPrice.Any() ? productsWithPrice.Max(p => p.Price) : 0;
             var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
-            
+            var timeStamp = DateTime.Now.ToString("HHmmss");
             var cleanBrandName = primaryBrand.Replace(".", "").Replace(" ", "");
 
-            // Jekyll front matter voor verkooppagina
             sb.AppendLine("---");
-            sb.AppendLine("layout: product-page");
-            sb.AppendLine($"title: \"{primaryBrand} - Premium Producten Online Shop\"");
+            sb.AppendLine("layout: post");
+            sb.AppendLine($"title: \"{feedId} - Premium Producten Online Shop\"");
             sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
             sb.AppendLine($"description: \"Shop de beste {feedId} producten online. Van €{minPrice:F2} tot €{maxPrice:F2}. Gratis verzending, 30 dagen retour en de laagste prijsgarantie.\"");
             sb.AppendLine($"excerpt: \"Ontdek onze selectie van {products.Count} {feedId} producten. Topkwaliteit, scherpe prijzen en snelle levering.\"");
-            sb.AppendLine($"img: {imageName}");
             sb.AppendLine($"tags: [{cleanBrandName}, shop, online-winkel, bestsellers, aanbiedingen]");
             sb.AppendLine($"categories: [webshop, producten]");
             sb.AppendLine($"keywords: \"{feedId} kopen, {feedId} shop, {feedId} aanbieding, online winkel\"");
             sb.AppendLine("author: Webshop Manager");
-            sb.AppendLine($"canonical_url: \"/shop-{cleanBrandName.ToLower()}\"");
+            sb.AppendLine($"canonical_url: \"/verkoop-{feedId}-{timeStamp}\"");
             sb.AppendLine("sitemap:");
             sb.AppendLine("  priority: 1.0");
             sb.AppendLine("  changefreq: daily");
@@ -661,20 +594,11 @@ namespace TradeTrackerConsoleApp
 
                     sb.AppendLine($"### 🏆 #{i + 1} Bestseller");
                     sb.AppendLine();
-                    
-                    if (!string.IsNullOrEmpty(product.ProductURL))
-                    {
-                        sb.AppendLine($"[![{EscapeMarkdown(productName)}]({product.ProductURL})]({product.ProductURL})");
-                        sb.AppendLine();
-                        sb.AppendLine($"**[🛍️ {EscapeMarkdown(productName)}]({product.ProductURL})**");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"**🛍️ {EscapeMarkdown(productName)}**");
-                    }
+
+                    sb.AppendLine($"**🛍️ {EscapeMarkdown(productName)}**");
                     
                     sb.AppendLine();
-                    sb.AppendLine($"💰 **Speciale Prijs: €{product.Price:F2}** ~~€{originalPrice:F2}~~ *({discount:F0}% korting!)*");
+                    sb.AppendLine($"💰 **Speciale Prijs: €{product.Price:F2}**");
                     sb.AppendLine();
                     sb.AppendLine($"🏷️ **Merk:** {product.Brand ?? "Premium"}");
                     sb.AppendLine($"📦 **Product ID:** {product.ProductID}");
@@ -808,7 +732,7 @@ namespace TradeTrackerConsoleApp
             return sb.ToString();
         }
 
-        private string GenerateMarkdownReport(List<TradeTrackerProduct> products, string imageName, string feedId)
+        private string GenerateMarkdownReport(List<TradeTrackerProduct> products, string feedId)
         {
             var sb = new System.Text.StringBuilder();
             var importDate = products.FirstOrDefault()?.ImportDate ?? DateTime.Now;
@@ -831,7 +755,6 @@ namespace TradeTrackerConsoleApp
             sb.AppendLine($"date: {importDate:yyyy-MM-dd HH:mm:ss} +0200");
             sb.AppendLine($"description: \"Analyse van consumentenkoopgedrag bij {feedId} met {products.Count} producten.\"");
             sb.AppendLine($"excerpt: \"Koopgedrag analyse {feedId}: €{minPrice:F2}-€{maxPrice:F2} prijsbereik, gemiddeld €{avgPrice:F2}.\"");
-            sb.AppendLine($"img: {imageName}");
             sb.AppendLine($"tags: [consumentengedrag, koopgedrag, {cleanBrandName}, prijsanalyse]");
             sb.AppendLine($"categories: [marktonderzoek, consumentengedrag]");
             sb.AppendLine("author: Marktonderzoeker");
@@ -975,6 +898,7 @@ namespace TradeTrackerConsoleApp
         static async Task Main(string[] args)
         {
             Console.WriteLine("=== TradeTracker Product Feed Reader ===");
+            Console.WriteLine("=== Verwerken van ALLE FEEDS ===");
             Console.WriteLine();
 
             var service = new TradeTrackerService();
@@ -984,65 +908,82 @@ namespace TradeTrackerConsoleApp
 
             try
             {
-                var products = await service.GetProductsAsync();
+                var allFeeds = service.GetAllActiveFeeds();
+                var totalProductsProcessed = 0;
+                var successfulFeeds = 0;
+                var failedFeeds = 0;
 
-                if (products.Any())
+                Console.WriteLine($"\n=== STARTEN MET VERWERKEN VAN {allFeeds.Count} FEEDS ===");
+                Console.WriteLine();
+
+                foreach (var feed in allFeeds)
                 {
-                    Console.WriteLine("\n=== RESULTATEN ===");
-                    Console.WriteLine($"Totaal aantal producten: {products.Count}");
-                    Console.WriteLine($"Importdatum: {products.First().ImportDate:yyyy-MM-dd HH:mm:ss}");
-                    Console.WriteLine();
-
-                    // Toon eerste 5 producten als voorbeeld
-                    Console.WriteLine("Eerste 5 producten:");
-                    foreach (var product in products.Take(5))
+                    try
                     {
-                        Console.WriteLine($"- ID: {product.ProductID}");
-                        Console.WriteLine($"  Naam: {product.ProductName}");
-                        Console.WriteLine($"  Prijs: {product.Price:C} {product.Currency}");
-                        Console.WriteLine($"  Categorie: {product.Category}");
-                        Console.WriteLine($"  Merk: {product.Brand}");
-                        Console.WriteLine($"  Import: {product.ImportDate:yyyy-MM-dd HH:mm:ss}");
-                        Console.WriteLine();
-                    }
+                        Console.WriteLine($"\n🔄 Verwerken van feed: {feed.Name} ({feed.Id})");
+                        Console.WriteLine($"   Categorie: {feed.Category}");
+                        Console.WriteLine($"   Beschrijving: {feed.Description}");
+                        
+                        // Wissel naar deze feed
+                        service.SelectFeed(feed.Id ?? "unknown");
+                        
+                        // Haal producten op voor deze feed
+                        var products = await service.GetProductsAsync();
 
-                    // Statistieken
-                    var uniqueBrands = products.Where(p => !string.IsNullOrEmpty(p.Brand))
-                                             .Select(p => p.Brand)
-                                             .Distinct()
-                                             .Count();
-                    
-                    var productsWithPrice = products.Where(p => p.Price > 0);
-                    var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
-
-                    Console.WriteLine("=== STATISTIEKEN ===");
-                    Console.WriteLine($"Unieke merken: {uniqueBrands}");
-                    Console.WriteLine($"Producten met prijs: {productsWithPrice.Count()}");
-                    Console.WriteLine($"Gemiddelde prijs: {avgPrice:C}");
-
-                    // Sla data op in bestanden
-                    await service.SaveProductsToFileAsync(products);
-                    await service.SaveProductsToMarkdownAsync(products);
-                    
-                    // Toon merken als er zijn gevonden
-                    if (uniqueBrands > 0)
-                    {
-                        Console.WriteLine("\nGevonden merken:");
-                        var brands = products.Where(p => !string.IsNullOrEmpty(p.Brand))
-                                           .Select(p => p.Brand)
-                                           .Distinct()
-                                           .OrderBy(b => b)
-                                           .Take(10);
-                        foreach (var brand in brands)
+                        if (products.Any())
                         {
-                            Console.WriteLine($"- {brand}");
+                            totalProductsProcessed += products.Count;
+                            successfulFeeds++;
+
+                            Console.WriteLine($"✅ {feed.Name}: {products.Count} producten verwerkt");
+                            
+                            // Statistieken
+                            var uniqueBrands = products.Where(p => !string.IsNullOrEmpty(p.Brand))
+                                                     .Select(p => p.Brand)
+                                                     .Distinct()
+                                                     .Count();
+                            
+                            var productsWithPrice = products.Where(p => p.Price > 0);
+                            var avgPrice = productsWithPrice.Any() ? productsWithPrice.Average(p => p.Price) : 0;
+
+                            Console.WriteLine($"   📊 Unieke merken: {uniqueBrands}");
+                            Console.WriteLine($"   💰 Producten met prijs: {productsWithPrice.Count()}");
+                            Console.WriteLine($"   💵 Gemiddelde prijs: {avgPrice:C}");
+
+                            // Sla data op in bestanden voor deze feed
+                            
+                            await service.SaveProductsToMarkdownAsync(products);
+                            
+                            Console.WriteLine($"   📁 Bestanden opgeslagen voor {feed.Name}");
+                        }
+                        else
+                        {
+                            failedFeeds++;
+                            Console.WriteLine($"❌ {feed.Name}: Geen producten gevonden");
                         }
                     }
+                    catch (Exception feedEx)
+                    {
+                        failedFeeds++;
+                        Console.WriteLine($"❌ Fout bij verwerken van {feed.Name}: {feedEx.Message}");
+                    }
+
+                    // Kleine pauze tussen feeds om API niet te overbelasten
+                    await Task.Delay(2000);
                 }
-                else
-                {
-                    Console.WriteLine("Geen producten gevonden of fout bij ophalen data.");
-                }
+
+                // Samenvattende statistieken
+                Console.WriteLine("\n" + new string('=', 60));
+                Console.WriteLine("🎉 VERWERKING VOLTOOID - SAMENVATTING");
+                Console.WriteLine(new string('=', 60));
+                Console.WriteLine($"📈 Totaal verwerkte feeds: {allFeeds.Count}");
+                Console.WriteLine($"✅ Succesvolle feeds: {successfulFeeds}");
+                Console.WriteLine($"❌ Mislukte feeds: {failedFeeds}");
+                Console.WriteLine($"📦 Totaal verwerkte producten: {totalProductsProcessed:N0}");
+                Console.WriteLine($"📁 Gegenereerde pagina's: {successfulFeeds * 2} (rapport + verkoop per feed)");
+                Console.WriteLine($"🖼️  Gegenereerde afbeeldingen: {successfulFeeds}");
+                Console.WriteLine();
+                Console.WriteLine("Alle bestanden zijn opgeslagen in de datum-gestructureerde mappen.");
             }
             catch (Exception ex)
             {
@@ -1052,9 +993,6 @@ namespace TradeTrackerConsoleApp
             {
                 service.Dispose();
             }
-
-            Console.WriteLine("\nDruk op een toets om af te sluiten...");
-            Console.ReadKey();
         }
     }
 }
